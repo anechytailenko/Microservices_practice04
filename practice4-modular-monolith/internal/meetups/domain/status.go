@@ -6,4 +6,5 @@ const (
 	StatusDraft     MeetupStatus = "Draft"
 	StatusPublished MeetupStatus = "Published"
 	StatusArchived  MeetupStatus = "Archived"
+	StatusCanceled  MeetupStatus = "Canceled"
 )
