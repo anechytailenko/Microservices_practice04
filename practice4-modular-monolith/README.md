@@ -58,8 +58,6 @@ curl -X PATCH http://localhost:8080/meetups/<MEETUP_ID>/status \
      -d '{"status": "Published"}'
 ```
 
----
-
 #### 4. Get Meetup by ID
 
 ```bash
