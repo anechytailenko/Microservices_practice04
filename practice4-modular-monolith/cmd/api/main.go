@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/anechytailenko/Microservices_practice04/internal/meetups/domain"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/change_status"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/create_meetup"
+	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/get_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/infrastructure"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
 	_ "github.com/joho/godotenv"
@@ -33,8 +33,10 @@ func main() {
 	}
 
 	repo := infrastructure.NewPostgresRepo(db)
+
 	createHandler := create_meetup.NewHandler(repo)
 	changeStatusHandler := change_status.NewHandler(repo)
+	getMeetupHandler := get_meetup.NewHandler(repo)
 
 	mux := http.NewServeMux()
 
@@ -90,21 +92,19 @@ func main() {
 		shared.WriteNoContent(w)
 	})
 
-	// GET /meetups/{id})
+	// GET /meetups/{id}
 	mux.HandleFunc("GET /meetups/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id := domain.MeetupID(r.PathValue("id"))
+		q := get_meetup.Query{
+			MeetupID: r.PathValue("id"),
+		}
 
-		meetup, err := repo.GetByID(r.Context(), id)
+		dto, err := getMeetupHandler.Handle(r.Context(), q)
 		if err != nil {
 			shared.HandleError(w, err)
 			return
 		}
-		if meetup == nil {
-			http.Error(w, "meetup not found", http.StatusNotFound)
-			return
-		}
 
-		shared.WriteJSON(w, http.StatusOK, meetup)
+		shared.WriteJSON(w, http.StatusOK, dto)
 	})
 
 	log.Println("Starting server on :8080...")
