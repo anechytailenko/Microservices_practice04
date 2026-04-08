@@ -41,11 +41,12 @@ func TestHandler_Handle(t *testing.T) {
 	meetupID := domain.MeetupID("12345")
 
 	initialMeetup := domain.Meetup{
-		ID:        meetupID,
-		Title:     "Test Meetup",
-		Capacity:  100,
-		Status:    domain.StatusDraft,
-		CreatedAt: time.Now(),
+		ID:          meetupID,
+		Title:       "Test Meetup",
+		Capacity:    100,
+		OwnerUserID: "user-123",
+		Status:      domain.StatusDraft,
+		CreatedAt:   time.Now(),
 	}
 
 	tests := []struct {

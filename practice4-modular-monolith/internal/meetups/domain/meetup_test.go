@@ -5,23 +5,24 @@ import (
 )
 
 func TestNewMeetup(t *testing.T) {
-
 	tests := []struct {
 		name        string
 		title       string
 		capacity    int
+		ownerUserID string
 		expectError bool
 	}{
-		{"Valid meetup", "Go Architecture", 100, false},
-		{"Empty title", "", 100, true},
-		{"Zero capacity", "Go Architecture", 0, true},
-		{"Negative capacity", "Go Architecture", -50, true},
+		{"Valid meetup", "Go Architecture", 100, "user-123", false},
+		{"Empty title", "", 100, "user-123", true},
+		{"Zero capacity", "Go Architecture", 0, "user-123", true},
+		{"Negative capacity", "Go Architecture", -50, "user-123", true},
+		{"Empty owner ID", "Go Architecture", 100, "", true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			m, err := NewMeetup(tt.title, tt.capacity)
+			m, err := NewMeetup(tt.title, tt.capacity, tt.ownerUserID)
 
 			if tt.expectError {
 				if err == nil {
@@ -32,13 +33,16 @@ func TestNewMeetup(t *testing.T) {
 				}
 			} else {
 				if err != nil {
-					t.Errorf("unexpected error: %v", err)
+					t.Fatalf("unexpected error: %v", err)
 				}
 				if m == nil {
-					t.Errorf("expected meetup to be created, got nil")
+					t.Fatalf("expected meetup to be created, got nil")
 				}
-				if m != nil && m.Status != StatusDraft {
+				if m.Status != StatusDraft {
 					t.Errorf("expected initial status to be %q, got %q", StatusDraft, m.Status)
+				}
+				if m.OwnerUserID != tt.ownerUserID {
+					t.Errorf("expected owner ID %q, got %q", tt.ownerUserID, m.OwnerUserID)
 				}
 			}
 		})

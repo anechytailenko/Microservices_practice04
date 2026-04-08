@@ -10,16 +10,29 @@ type Repository interface {
 	Save(ctx context.Context, meetup *domain.Meetup) error
 }
 
-type Handler struct {
-	repo Repository
+// interface that is implemented by http-client
+type UserValidator interface {
+	ValidateUserExists(ctx context.Context, userID string) error
 }
 
-func NewHandler(repo Repository) *Handler {
-	return &Handler{repo: repo}
+type Handler struct {
+	repo          Repository
+	userValidator UserValidator
+}
+
+func NewHandler(repo Repository, userValidator UserValidator) *Handler {
+	return &Handler{
+		repo:          repo,
+		userValidator: userValidator,
+	}
 }
 
 func (h *Handler) Handle(ctx context.Context, cmd Command) (domain.MeetupID, error) {
-	meetup, err := domain.NewMeetup(cmd.Title, cmd.Capacity)
+	if err := h.userValidator.ValidateUserExists(ctx, cmd.OwnerUserID); err != nil {
+		return "", err
+	}
+
+	meetup, err := domain.NewMeetup(cmd.Title, cmd.Capacity, cmd.OwnerUserID)
 	if err != nil {
 		return "", err
 	}

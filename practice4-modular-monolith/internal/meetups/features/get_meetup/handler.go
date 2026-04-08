@@ -32,11 +32,12 @@ func (h *Handler) Handle(ctx context.Context, q Query) (*MeetupDTO, error) {
 	}
 
 	dto := &MeetupDTO{
-		ID:        string(meetup.ID),
-		Title:     meetup.Title,
-		Capacity:  meetup.Capacity,
-		Status:    string(meetup.Status),
-		CreatedAt: meetup.CreatedAt,
+		ID:          string(meetup.ID),
+		Title:       meetup.Title,
+		Capacity:    meetup.Capacity,
+		OwnerUserID: meetup.OwnerUserID,
+		Status:      string(meetup.Status),
+		CreatedAt:   meetup.CreatedAt,
 	}
 
 	return dto, nil

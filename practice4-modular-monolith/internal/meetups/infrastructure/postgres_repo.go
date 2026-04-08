@@ -8,7 +8,6 @@ import (
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/domain"
 )
 
-// implement interface Repository defined in the application layer
 type PostgresRepo struct {
 	db *sql.DB
 }
@@ -19,14 +18,15 @@ func NewPostgresRepo(db *sql.DB) *PostgresRepo {
 
 func (r *PostgresRepo) Save(ctx context.Context, meetup *domain.Meetup) error {
 	query := `
-		INSERT INTO meetups (id, title, capacity, status, created_at)
-		VALUES ($1, $2, $3, $4, $5)`
+        INSERT INTO meetups (id, title, capacity, owner_user_id, status, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6)`
 
 	_, err := r.db.ExecContext(ctx, query,
-		meetup.ID,
+		string(meetup.ID),
 		meetup.Title,
 		meetup.Capacity,
-		meetup.Status,
+		meetup.OwnerUserID,
+		string(meetup.Status),
 		meetup.CreatedAt,
 	)
 
@@ -35,9 +35,9 @@ func (r *PostgresRepo) Save(ctx context.Context, meetup *domain.Meetup) error {
 
 func (r *PostgresRepo) GetByID(ctx context.Context, id domain.MeetupID) (*domain.Meetup, error) {
 	query := `
-		SELECT id, title, capacity, status, created_at 
-		FROM meetups 
-		WHERE id = $1`
+        SELECT id, title, capacity, owner_user_id, status, created_at 
+        FROM meetups 
+        WHERE id = $1`
 
 	var m domain.Meetup
 	var rawStatus string
@@ -46,6 +46,7 @@ func (r *PostgresRepo) GetByID(ctx context.Context, id domain.MeetupID) (*domain
 		&m.ID,
 		&m.Title,
 		&m.Capacity,
+		&m.OwnerUserID,
 		&rawStatus,
 		&m.CreatedAt,
 	)
@@ -58,21 +59,21 @@ func (r *PostgresRepo) GetByID(ctx context.Context, id domain.MeetupID) (*domain
 	}
 
 	m.Status = domain.MeetupStatus(rawStatus)
-
 	return &m, nil
 }
 
 func (r *PostgresRepo) Update(ctx context.Context, meetup *domain.Meetup) error {
 	query := `
-		UPDATE meetups 
-		SET title = $1, capacity = $2, status = $3 
-		WHERE id = $4`
+        UPDATE meetups 
+        SET title = $1, capacity = $2, owner_user_id = $3, status = $4 
+        WHERE id = $5`
 
 	_, err := r.db.ExecContext(ctx, query,
 		meetup.Title,
 		meetup.Capacity,
-		meetup.Status,
-		meetup.ID,
+		meetup.OwnerUserID,
+		string(meetup.Status),
+		string(meetup.ID),
 	)
 
 	return err

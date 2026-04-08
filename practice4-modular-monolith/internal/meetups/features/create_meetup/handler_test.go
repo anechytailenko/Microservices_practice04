@@ -26,47 +26,87 @@ func (f *fakeRepo) Save(ctx context.Context, meetup *domain.Meetup) error {
 	return nil
 }
 
+type fakeUserValidator struct {
+	validateErr error
+}
+
+func newFakeUserValidator() *fakeUserValidator {
+	return &fakeUserValidator{}
+}
+
+func (f *fakeUserValidator) ValidateUserExists(ctx context.Context, userID string) error {
+	return f.validateErr
+}
+
 func TestHandler_Handle(t *testing.T) {
 	tests := []struct {
 		name          string
 		command       Command
-		setupMock     func(repo *fakeRepo)
+		setupMock     func(repo *fakeRepo, userValidator *fakeUserValidator)
 		expectedError error
 	}{
 		{
 			name: "Success: Meetup Created and Saved",
 			command: Command{
-				Title:    "Go Architecture Meetup",
-				Capacity: 100,
+				Title:       "Go Architecture Meetup",
+				Capacity:    100,
+				OwnerUserID: "user-123",
 			},
-			setupMock:     func(repo *fakeRepo) {},
+			setupMock:     func(repo *fakeRepo, userValidator *fakeUserValidator) {},
 			expectedError: nil,
+		},
+		{
+			name: "Error: User Validation Fails (Not Found)",
+			command: Command{
+				Title:       "Go Architecture Meetup",
+				Capacity:    100,
+				OwnerUserID: "non-existent-user",
+			},
+			setupMock: func(repo *fakeRepo, userValidator *fakeUserValidator) {
+				userValidator.validateErr = shared.NewValidationError("owner_user_id 'non-existent-user' does not exist")
+			},
+			expectedError: shared.Error{Type: shared.ErrorTypeValidation},
+		},
+		{
+			name: "Error: Users Service Unreachable",
+			command: Command{
+				Title:       "Go Architecture Meetup",
+				Capacity:    100,
+				OwnerUserID: "user-123",
+			},
+			setupMock: func(repo *fakeRepo, userValidator *fakeUserValidator) {
+				userValidator.validateErr = shared.NewServiceUnavailableError("users service is unreachable")
+			},
+			expectedError: shared.Error{Type: shared.ErrorTypeServiceUnavailable},
 		},
 		{
 			name: "Error: Domain Rule Violation (Empty Title)",
 			command: Command{
-				Title:    "",
-				Capacity: 100,
+				Title:       "",
+				Capacity:    100,
+				OwnerUserID: "user-123",
 			},
-			setupMock:     func(repo *fakeRepo) {},
+			setupMock:     func(repo *fakeRepo, userValidator *fakeUserValidator) {},
 			expectedError: shared.Error{Type: shared.ErrorTypeValidation},
 		},
 		{
 			name: "Error: Domain Rule Violation (Negative Capacity)",
 			command: Command{
-				Title:    "Valid Title",
-				Capacity: -5,
+				Title:       "Valid Title",
+				Capacity:    -5,
+				OwnerUserID: "user-123",
 			},
-			setupMock:     func(repo *fakeRepo) {},
+			setupMock:     func(repo *fakeRepo, userValidator *fakeUserValidator) {},
 			expectedError: shared.Error{Type: shared.ErrorTypeValidation},
 		},
 		{
 			name: "Error: Database Save Fails",
 			command: Command{
-				Title:    "Valid Title",
-				Capacity: 100,
+				Title:       "Valid Title",
+				Capacity:    100,
+				OwnerUserID: "user-123",
 			},
-			setupMock: func(repo *fakeRepo) {
+			setupMock: func(repo *fakeRepo, userValidator *fakeUserValidator) {
 				repo.saveErr = errors.New("database timeout")
 			},
 			expectedError: errors.New("database timeout"),
@@ -76,8 +116,10 @@ func TestHandler_Handle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			repo := newFakeRepo()
-			tt.setupMock(repo)
-			handler := NewHandler(repo)
+			userValidator := newFakeUserValidator()
+			tt.setupMock(repo, userValidator)
+
+			handler := NewHandler(repo, userValidator)
 
 			id, err := handler.Handle(context.Background(), tt.command)
 
@@ -85,20 +127,20 @@ func TestHandler_Handle(t *testing.T) {
 				if err != nil {
 					t.Errorf("expected no error, got: %v", err)
 				}
-
 				if id == "" {
 					t.Errorf("expected valid meetup ID, got empty string")
 				}
-
 				if repo.savedMeetup == nil {
 					t.Fatalf("expected meetup to be passed to repo.Save, but it was nil")
 				}
-
 				if repo.savedMeetup.Title != tt.command.Title {
 					t.Errorf("expected saved title %q, got %q", tt.command.Title, repo.savedMeetup.Title)
 				}
 				if repo.savedMeetup.Capacity != tt.command.Capacity {
 					t.Errorf("expected saved capacity %d, got %d", tt.command.Capacity, repo.savedMeetup.Capacity)
+				}
+				if repo.savedMeetup.OwnerUserID != tt.command.OwnerUserID {
+					t.Errorf("expected saved owner user ID %q, got %q", tt.command.OwnerUserID, repo.savedMeetup.OwnerUserID)
 				}
 			} else {
 				if err == nil {

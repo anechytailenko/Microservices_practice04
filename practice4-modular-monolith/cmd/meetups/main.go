@@ -21,9 +21,19 @@ import (
 var CommitHash string = "unknown"
 
 func main() {
-	dbURL := os.Getenv("USERS_DB_URL")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	dbURL := os.Getenv("MEETUPS_DB_URL")
 	if dbURL == "" {
-		log.Fatal("USERS_DB_URL is not set")
+		log.Fatal("MEETUPS_DB_URL is not set")
+	}
+
+	usersServiceURL := os.Getenv("USERS_SERVICE_URL")
+	if usersServiceURL == "" {
+		log.Fatal("USERS_SERVICE_URL is not set")
 	}
 
 	db, err := sql.Open("postgres", dbURL)
@@ -33,17 +43,19 @@ func main() {
 	defer db.Close()
 
 	repo := infrastructure.NewPostgresRepo(db)
-	createHandler := create_meetup.NewHandler(repo)
+	usersClient := infrastructure.NewUsersClient(usersServiceURL)
+
+	createHandler := create_meetup.NewHandler(repo, usersClient)
 	changeStatusHandler := change_status.NewHandler(repo)
 	getMeetupHandler := get_meetup.NewHandler(repo)
 
 	mux := http.NewServeMux()
 
-	shared.RegisterHealthRoutes(mux, db, "users", CommitHash)
+	shared.RegisterHealthRoutes(mux, db, "meetups", CommitHash)
 	meetups_api.RegisterRoutes(mux, createHandler, changeStatusHandler, getMeetupHandler)
 
-	log.Println("Users Service is starting on :8082... Commit:", CommitHash)
-	if err := http.ListenAndServe(":8082", mux); err != nil {
+	log.Printf("Starting server on port %s...", port)
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }

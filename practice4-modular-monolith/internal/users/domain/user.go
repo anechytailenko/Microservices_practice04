@@ -31,7 +31,7 @@ func NewUser(firstName, lastName, email string) (*User, error) {
 		return nil, shared.NewValidationError("email cannot be empty")
 	}
 
-	// validation of address format pattern through library
+	// validation of email format pattern through library
 	if _, err := mail.ParseAddress(email); err != nil {
 		return nil, shared.NewValidationError("invalid email format: %s", email)
 	}

@@ -7,27 +7,32 @@ import (
 )
 
 type Meetup struct {
-	ID        MeetupID
-	Title     string
-	Capacity  int
-	Status    MeetupStatus
-	CreatedAt time.Time
+	ID          MeetupID
+	Title       string
+	Capacity    int
+	OwnerUserID string
+	Status      MeetupStatus
+	CreatedAt   time.Time
 }
 
-func NewMeetup(title string, capacity int) (*Meetup, error) {
+func NewMeetup(title string, capacity int, ownerUserID string) (*Meetup, error) {
 	if title == "" {
 		return nil, shared.NewValidationError("meetup title cannot be empty")
 	}
 	if capacity <= 0 {
 		return nil, shared.NewValidationError("capacity must be positive, got: %d", capacity)
 	}
+	if ownerUserID == "" {
+		return nil, shared.NewValidationError("owner user id cannot be empty")
+	}
 
 	return &Meetup{
-		ID:        NewMeetupID(),
-		Title:     title,
-		Capacity:  capacity,
-		Status:    StatusDraft,
-		CreatedAt: time.Now().UTC(),
+		ID:          NewMeetupID(),
+		Title:       title,
+		Capacity:    capacity,
+		OwnerUserID: ownerUserID,
+		Status:      StatusDraft,
+		CreatedAt:   time.Now().UTC(),
 	}, nil
 }
 

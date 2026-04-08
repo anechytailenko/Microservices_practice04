@@ -33,11 +33,12 @@ func TestHandler_Handle(t *testing.T) {
 	now := time.Now().UTC()
 
 	initialMeetup := domain.Meetup{
-		ID:        meetupID,
-		Title:     "Read API Architecture",
-		Capacity:  200,
-		Status:    domain.StatusPublished,
-		CreatedAt: now,
+		ID:          meetupID,
+		Title:       "Read API Architecture",
+		Capacity:    200,
+		OwnerUserID: "user-123",
+		Status:      domain.StatusPublished,
+		CreatedAt:   now,
 	}
 
 	tests := []struct {
@@ -95,6 +96,9 @@ func TestHandler_Handle(t *testing.T) {
 				}
 				if dto.Capacity != initialMeetup.Capacity {
 					t.Errorf("expected Capacity %d, got %d", initialMeetup.Capacity, dto.Capacity)
+				}
+				if dto.OwnerUserID != initialMeetup.OwnerUserID {
+					t.Errorf("expected OwnerUserID %q, got %q", initialMeetup.OwnerUserID, dto.OwnerUserID)
 				}
 				if dto.Status != string(initialMeetup.Status) {
 					t.Errorf("expected Status %q, got %q", initialMeetup.Status, dto.Status)

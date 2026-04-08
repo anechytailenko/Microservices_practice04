@@ -20,6 +20,11 @@ import (
 var CommitHash string = "unknown"
 
 func main() {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	dbURL := os.Getenv("MEETUPS_DB_URL")
 	if dbURL == "" {
 		log.Fatal("USERS_DB_URL is not set")
@@ -40,8 +45,8 @@ func main() {
 	shared.RegisterHealthRoutes(mux, db, "users", CommitHash)
 	users_api.RegisterRoutes(mux, createHandler, getUserHandler)
 
-	log.Println("Users Service is starting on :8082... Commit:", CommitHash)
-	if err := http.ListenAndServe(":8082", mux); err != nil {
+	log.Printf("Starting server on port %s...", port)
+	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
