@@ -1,26 +1,48 @@
-package gateway
+package main
 
 import (
 	"log"
 	"net/http"
+	"os"
 
-	"github.com/anechytailenko/Microservices_practice04/internal/shared"
-
-	_ "github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"github.com/anechytailenko/Microservices_practice04/internal/gateway/reverseproxy"
 )
 
 func main() {
+	meetupsURL := os.Getenv("MEETUPS_SERVICE_URL")
+	if meetupsURL == "" {
+		log.Fatal("MEETUPS_SERVICE_URL is not set")
+	}
+
+	usersURL := os.Getenv("USERS_SERVICE_URL")
+	if usersURL == "" {
+		log.Fatal("USERS_SERVICE_URL is not set")
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	meetupsProxy, err := reverseproxy.NewProxy(meetupsURL)
+	if err != nil {
+		log.Fatalf("Failed to create meetups proxy: %v", err)
+	}
+
+	usersProxy, err := reverseproxy.NewProxy(usersURL)
+	if err != nil {
+		log.Fatalf("Failed to create users proxy: %v", err)
+	}
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		shared.WriteJSON(w, http.StatusOK, map[string]string{
-			"status": "UP",
-		})
-	})
+	mux.Handle("/users/", usersProxy)
+	mux.Handle("/meetups/", meetupsProxy)
 
-	log.Println("Starting server on :8080...")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	finalHandler := reverseproxy.CorrelationID(mux)
+
+	log.Printf("API Gateway is starting on port %s...", port)
+	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
+		log.Fatalf("Gateway server failed: %v", err)
 	}
 }
