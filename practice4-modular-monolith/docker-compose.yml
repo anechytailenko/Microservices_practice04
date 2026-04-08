@@ -41,3 +41,12 @@ services:
 
 volumes:
   pgdata:
+
+    # In future do not forget about git commit hash
+    # Example : 
+    # services:
+    #     build:
+    #       context: .
+    #       dockerfile: deploy/users.Dockerfile
+    #       args:
+    #         COMMIT_HASH: ${GIT_COMMIT:-unknown} 

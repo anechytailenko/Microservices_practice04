@@ -6,7 +6,6 @@ import (
 )
 
 func HandleError(w http.ResponseWriter, err error) {
-
 	var sharedErr Error
 
 	if errors.As(err, &sharedErr) {
@@ -17,6 +16,8 @@ func HandleError(w http.ResponseWriter, err error) {
 			http.Error(w, sharedErr.Message, http.StatusConflict)
 		case ErrorTypeNotFound:
 			http.Error(w, sharedErr.Message, http.StatusNotFound)
+		case ErrorTypeServiceUnavailable:
+			http.Error(w, sharedErr.Message, http.StatusServiceUnavailable)
 		default:
 			http.Error(w, sharedErr.Message, http.StatusBadRequest)
 		}

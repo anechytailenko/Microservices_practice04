@@ -5,9 +5,10 @@ import "fmt"
 type ErrorType string
 
 const (
-	ErrorTypeValidation ErrorType = "validation"
-	ErrorTypeConflict   ErrorType = "conflict"
-	ErrorTypeNotFound   ErrorType = "not_found"
+	ErrorTypeValidation         ErrorType = "validation"
+	ErrorTypeConflict           ErrorType = "conflict"
+	ErrorTypeNotFound           ErrorType = "not_found"
+	ErrorTypeServiceUnavailable ErrorType = "service_unavailable"
 )
 
 type Error struct {
@@ -36,6 +37,13 @@ func NewConflictError(msg string, args ...any) Error {
 func NewNotFoundError(msg string, args ...any) Error {
 	return Error{
 		Type:    ErrorTypeNotFound,
+		Message: fmt.Sprintf(msg, args...),
+	}
+}
+
+func NewServiceUnavailableError(msg string, args ...any) Error {
+	return Error{
+		Type:    ErrorTypeServiceUnavailable,
 		Message: fmt.Sprintf(msg, args...),
 	}
 }
