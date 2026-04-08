@@ -1,4 +1,4 @@
-package main
+package meetups
 
 import (
 	"database/sql"
@@ -6,17 +6,15 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/anechytailenko/Microservices_practice04/internal/api"
+	"github.com/anechytailenko/Microservices_practice04/internal/meetups/api"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/change_status"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/create_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/get_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/infrastructure"
-
-	_ "github.com/joho/godotenv"
-	_ "github.com/lib/pq"
 )
 
 func main() {
+
 	dbURL := os.Getenv("DATABASE_URL")
 	if dbURL == "" {
 		log.Fatal("DATABASE_URL is not set in environment variables")
@@ -38,10 +36,11 @@ func main() {
 	changeStatusHandler := change_status.NewHandler(repo)
 	getMeetupHandler := get_meetup.NewHandler(repo)
 
-	mux := api.NewRouter(createHandler, changeStatusHandler, getMeetupHandler)
+	mux := http.NewServeMux()
+	api.RegisterRoutes(mux, createHandler, changeStatusHandler, getMeetupHandler)
 
-	log.Println("Starting server on :8080...")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	log.Println("Starting server on :8081...")
+	if err := http.ListenAndServe(":8081", mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
