@@ -25,7 +25,7 @@ func main() {
 		port = "8080"
 	}
 
-	dbURL := os.Getenv("MEETUPS_DB_URL")
+	dbURL := os.Getenv("USERS_DB_URL")
 	if dbURL == "" {
 		log.Fatal("USERS_DB_URL is not set")
 	}

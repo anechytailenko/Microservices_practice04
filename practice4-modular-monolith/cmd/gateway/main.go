@@ -1,12 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/gateway/reverseproxy"
 )
+
+// this var will be rewritten by compiler when we would build
+var CommitHash string = "unknown"
 
 func main() {
 	meetupsURL := os.Getenv("MEETUPS_SERVICE_URL")
@@ -36,12 +40,17 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "Gateway is alive. Commit: %s", CommitHash)
+	})
 	mux.Handle("/users/", usersProxy)
 	mux.Handle("/meetups/", meetupsProxy)
 
 	finalHandler := reverseproxy.CorrelationID(mux)
 
 	log.Printf("API Gateway is starting on port %s...", port)
+
 	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
 		log.Fatalf("Gateway server failed: %v", err)
 	}
