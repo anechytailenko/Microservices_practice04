@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -40,12 +40,22 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "Gateway is alive. Commit: %s", CommitHash)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "UP",
+			"service": "gateway",
+			"commit":  CommitHash,
+		})
 	})
-	mux.Handle("/users/", usersProxy)
-	mux.Handle("/meetups/", meetupsProxy)
+
+	mux.Handle("/users/", http.StripPrefix("/users", usersProxy))
+	mux.Handle("POST /users", http.StripPrefix("/users", usersProxy))
+
+	mux.Handle("/meetups/", http.StripPrefix("/meetups", meetupsProxy))
+	mux.Handle("POST /meetups", http.StripPrefix("/meetups", meetupsProxy))
+	mux.Handle("PATCH /meetups/", http.StripPrefix("/meetups", meetupsProxy))
 
 	finalHandler := reverseproxy.CorrelationID(mux)
 

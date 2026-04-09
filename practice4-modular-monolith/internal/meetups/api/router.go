@@ -16,8 +16,8 @@ func RegisterRoutes(
 	changeStatusHandler *change_status.Handler,
 	getMeetupHandler *get_meetup.Handler,
 ) {
-	// POST /meetups
-	mux.HandleFunc("POST /meetups", func(w http.ResponseWriter, r *http.Request) {
+	// POST /
+	mux.HandleFunc("POST /", func(w http.ResponseWriter, r *http.Request) {
 		var cmd create_meetup.Command
 
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
@@ -34,8 +34,8 @@ func RegisterRoutes(
 		shared.WriteJSON(w, http.StatusCreated, map[string]string{"id": string(id)})
 	})
 
-	// PATCH /meetups/{id}/status
-	mux.HandleFunc("PATCH /meetups/{id}/status", func(w http.ResponseWriter, r *http.Request) {
+	// PATCH /{id}/status
+	mux.HandleFunc("PATCH /{id}/status", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
 
 		var reqBody struct {
@@ -60,8 +60,8 @@ func RegisterRoutes(
 		shared.WriteNoContent(w)
 	})
 
-	// GET /meetups/{id}
-	mux.HandleFunc("GET /meetups/{id}", func(w http.ResponseWriter, r *http.Request) {
+	// GET /{id}
+	mux.HandleFunc("GET /{id}", func(w http.ResponseWriter, r *http.Request) {
 		q := get_meetup.Query{
 			MeetupID: r.PathValue("id"),
 		}

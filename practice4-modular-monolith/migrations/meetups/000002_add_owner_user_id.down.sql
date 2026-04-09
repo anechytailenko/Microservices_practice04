@@ -1,0 +1,1 @@
+ALTER TABLE meetups DROP COLUMN owner_user_id;

@@ -14,8 +14,8 @@ func RegisterRoutes(
 	createHandler *create_user.Handler,
 	getUserHandler *get_user.Handler,
 ) {
-	// POST /users
-	mux.HandleFunc("POST /users", func(w http.ResponseWriter, r *http.Request) {
+	// POST /
+	mux.HandleFunc("POST /", func(w http.ResponseWriter, r *http.Request) {
 		var cmd create_user.Command
 
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
@@ -32,8 +32,8 @@ func RegisterRoutes(
 		shared.WriteJSON(w, http.StatusCreated, map[string]string{"id": string(id)})
 	})
 
-	// GET /users/{id}
-	mux.HandleFunc("GET /users/{id}", func(w http.ResponseWriter, r *http.Request) {
+	// GET /{id}
+	mux.HandleFunc("GET /{id}", func(w http.ResponseWriter, r *http.Request) {
 		q := get_user.Query{
 			UserID: r.PathValue("id"),
 		}

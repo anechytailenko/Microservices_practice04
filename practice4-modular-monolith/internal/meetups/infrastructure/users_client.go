@@ -25,7 +25,7 @@ func NewUsersClient(baseURL string) *UsersClient {
 
 // implementing interface UserValidator
 func (c *UsersClient) ValidateUserExists(ctx context.Context, userID string) error {
-	url := fmt.Sprintf("%s/users/%s", c.baseURL, userID)
+	url := fmt.Sprintf("%s/%s", c.baseURL, userID)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
