@@ -2,28 +2,57 @@ version: '3.8'
 
 services:
   # ==========================================
+  # MESSAGE BROKER
+  # ==========================================
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    ports:
+      - "${RABBITMQ_PORT}:${RABBITMQ_PORT}"
+      - "${RABBITMQ_UI_PORT}:${RABBITMQ_UI_PORT}"
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
   # DATABASES
   # ==========================================
-  meetups-db:
+  users-db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: meetup_user
-      POSTGRES_PASSWORD: secret_password
-      POSTGRES_DB: meetups_db
+      POSTGRES_USER: ${USERS_DB_USER}
+      POSTGRES_PASSWORD: ${USERS_DB_PASSWORD}
+      POSTGRES_DB: ${USERS_DB_NAME}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U meetup_user -d meetups_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${USERS_DB_USER} -d ${USERS_DB_NAME}" ]
       interval: 2s
       timeout: 5s
       retries: 10
 
-  users-db:
+  meetups-db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: user_user
-      POSTGRES_PASSWORD: secret_password
-      POSTGRES_DB: users_db
+      POSTGRES_USER: ${MEETUPS_DB_USER}
+      POSTGRES_PASSWORD: ${MEETUPS_DB_PASSWORD}
+      POSTGRES_DB: ${MEETUPS_DB_NAME}
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user_user -d users_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${MEETUPS_DB_USER} -d ${MEETUPS_DB_NAME}" ]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  notification-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${NOTIF_DB_USER}
+      POSTGRES_PASSWORD: ${NOTIF_DB_PASSWORD}
+      POSTGRES_DB: ${NOTIF_DB_NAME}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${NOTIF_DB_USER} -d ${NOTIF_DB_NAME}" ]
       interval: 2s
       timeout: 5s
       retries: 10
@@ -35,7 +64,7 @@ services:
     image: migrate/migrate:v4.17.0
     volumes:
       - ./migrations/users:/migrations
-    command: -path /migrations -database postgres://user_user:secret_password@users-db:5432/users_db?sslmode=disable up
+    command: -path /migrations -database postgres://${USERS_DB_USER}:${USERS_DB_PASSWORD}@users-db:${POSTGRES_PORT}/${USERS_DB_NAME}?sslmode=disable up
     depends_on:
       users-db:
         condition: service_healthy
@@ -44,9 +73,18 @@ services:
     image: migrate/migrate:v4.17.0
     volumes:
       - ./migrations/meetups:/migrations
-    command: -path /migrations -database postgres://meetup_user:secret_password@meetups-db:5432/meetups_db?sslmode=disable up
+    command: -path /migrations -database postgres://${MEETUPS_DB_USER}:${MEETUPS_DB_PASSWORD}@meetups-db:${POSTGRES_PORT}/${MEETUPS_DB_NAME}?sslmode=disable up
     depends_on:
       meetups-db:
+        condition: service_healthy
+
+  notification-migrate:
+    image: migrate/migrate:v4.17.0
+    volumes:
+      - ./migrations/notifications:/migrations
+    command: -path /migrations -database postgres://${NOTIF_DB_USER}:${NOTIF_DB_PASSWORD}@notification-db:${POSTGRES_PORT}/${NOTIF_DB_NAME}?sslmode=disable up
+    depends_on:
+      notification-db:
         condition: service_healthy
 
   # ==========================================
@@ -59,8 +97,8 @@ services:
       args:
         - COMMIT_HASH=${COMMIT_HASH:-unknown}
     environment:
-      - PORT=8080
-      - USERS_DB_URL=postgres://user_user:secret_password@users-db:5432/users_db?sslmode=disable
+      - PORT=${SERVICE_PORT}
+      - USERS_DB_URL=postgres://${USERS_DB_USER}:${USERS_DB_PASSWORD}@users-db:${POSTGRES_PORT}/${USERS_DB_NAME}?sslmode=disable
     depends_on:
       users-migrate:
         condition: service_completed_successfully
@@ -72,14 +110,33 @@ services:
       args:
         - COMMIT_HASH=${COMMIT_HASH:-unknown}
     environment:
-      - PORT=8080
-      - MEETUPS_DB_URL=postgres://meetup_user:secret_password@meetups-db:5432/meetups_db?sslmode=disable
-      - USERS_SERVICE_URL=http://users-service:8080
+      - PORT=${SERVICE_PORT}
+      - MEETUPS_DB_URL=postgres://${MEETUPS_DB_USER}:${MEETUPS_DB_PASSWORD}@meetups-db:${POSTGRES_PORT}/${MEETUPS_DB_NAME}?sslmode=disable
+      - USERS_SERVICE_URL=http://users-service:${SERVICE_PORT}
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:${RABBITMQ_PORT}/
     depends_on:
       users-service:
         condition: service_started
       meetups-migrate:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: deploy/notifications.Dockerfile
+      args:
+        - COMMIT_HASH=${COMMIT_HASH:-unknown}
+    environment:
+      - PORT=${SERVICE_PORT}
+      - NOTIFICATION_DB_URL=postgres://${NOTIF_DB_USER}:${NOTIF_DB_PASSWORD}@notification-db:${POSTGRES_PORT}/${NOTIF_DB_NAME}?sslmode=disable
+      - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:${RABBITMQ_PORT}/
+    depends_on:
+      notification-migrate:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
 
   # ==========================================
   # API GATEWAY
@@ -91,11 +148,11 @@ services:
       args:
         - COMMIT_HASH=${COMMIT_HASH:-unknown}
     ports:
-      - "8080:8080"
+      - "${SERVICE_PORT}:${SERVICE_PORT}"
     environment:
-      - PORT=8080
-      - MEETUPS_SERVICE_URL=http://meetups-service:8080
-      - USERS_SERVICE_URL=http://users-service:8080
+      - PORT=${SERVICE_PORT}
+      - MEETUPS_SERVICE_URL=http://meetups-service:${SERVICE_PORT}
+      - USERS_SERVICE_URL=http://users-service:${SERVICE_PORT}
     depends_on:
       - meetups-service
       - users-service
