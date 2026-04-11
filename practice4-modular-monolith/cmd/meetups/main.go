@@ -1,23 +1,25 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	meetups_api "github.com/anechytailenko/Microservices_practice04/internal/meetups/api"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/change_status"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/create_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/get_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/infrastructure"
-	"github.com/anechytailenko/Microservices_practice04/internal/shared"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
+	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 
 	_ "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
-// this var will be rewritten by compiler when we would build
 var CommitHash string = "unknown"
 
 func main() {
@@ -36,11 +38,25 @@ func main() {
 		log.Fatal("USERS_SERVICE_URL is not set")
 	}
 
+	rabbitMQURL := os.Getenv("RABBITMQ_URL")
+	if rabbitMQURL == "" {
+		log.Fatal("RABBITMQ_URL is not set")
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	defer db.Close()
+
+	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, "domain.events")
+	if err != nil {
+		log.Fatalf("Failed to initialize RabbitMQ publisher: %v", err)
+	}
+	defer publisher.Close()
+
+	outboxWorker := infrastructure.NewOutboxWorker(db, publisher)
+	go outboxWorker.Start(context.Background(), 2*time.Second)
 
 	repo := infrastructure.NewPostgresRepo(db)
 	usersClient := infrastructure.NewUsersClient(usersServiceURL)

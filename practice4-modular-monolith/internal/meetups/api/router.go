@@ -7,7 +7,8 @@ import (
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/change_status"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/create_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/get_meetup"
-	"github.com/anechytailenko/Microservices_practice04/internal/shared"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
+	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 )
 
 func RegisterRoutes(
@@ -25,7 +26,11 @@ func RegisterRoutes(
 			return
 		}
 
-		id, err := createHandler.Handle(r.Context(), cmd)
+		corrID := r.Header.Get("X-Correlation-Id")
+
+		ctx := ctxutil.WithCorrelationID(r.Context(), corrID)
+
+		id, err := createHandler.Handle(ctx, cmd)
 		if err != nil {
 			shared.HandleError(w, err)
 			return

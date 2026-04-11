@@ -2,27 +2,43 @@ package create_meetup
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/domain"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/events"
 )
 
 type fakeRepo struct {
-	savedMeetup *domain.Meetup
-	saveErr     error
+	savedMeetup    *domain.Meetup
+	savedEventID   string
+	savedEventType string
+	savedEvent     events.MeetupCreatedEvent
+	savedPayload   []byte
+	saveErr        error
 }
 
 func newFakeRepo() *fakeRepo {
 	return &fakeRepo{}
 }
 
-func (f *fakeRepo) Save(ctx context.Context, meetup *domain.Meetup) error {
+func (f *fakeRepo) Save(ctx context.Context, meetup *domain.Meetup, eventID string, eventType string, payload []byte) error {
 	if f.saveErr != nil {
 		return f.saveErr
 	}
 	f.savedMeetup = meetup
+	f.savedEventID = eventID
+	f.savedEventType = eventType
+	f.savedPayload = payload
+
+	var evt events.MeetupCreatedEvent
+	if err := json.Unmarshal(payload, &evt); err == nil {
+		f.savedEvent = evt
+	}
+
 	return nil
 }
 
@@ -121,7 +137,10 @@ func TestHandler_Handle(t *testing.T) {
 
 			handler := NewHandler(repo, userValidator)
 
-			id, err := handler.Handle(context.Background(), tt.command)
+			expectedCorrID := "test-correlation-id-999"
+			ctx := ctxutil.WithCorrelationID(context.Background(), expectedCorrID)
+
+			id, err := handler.Handle(ctx, tt.command)
 
 			if tt.expectedError == nil {
 				if err != nil {
@@ -142,6 +161,22 @@ func TestHandler_Handle(t *testing.T) {
 				if repo.savedMeetup.OwnerUserID != tt.command.OwnerUserID {
 					t.Errorf("expected saved owner user ID %q, got %q", tt.command.OwnerUserID, repo.savedMeetup.OwnerUserID)
 				}
+				if repo.savedEventType != "meetup.created" {
+					t.Errorf("expected event type 'meetup.created', got %q", repo.savedEventType)
+				}
+				if repo.savedEvent.CorrelationID != expectedCorrID {
+					t.Errorf("expected event CorrelationID %q, got %q", expectedCorrID, repo.savedEvent.CorrelationID)
+				}
+				if len(repo.savedPayload) == 0 {
+					t.Errorf("expected non-empty JSON payload, got empty")
+				}
+				if repo.savedEventID == "" {
+					t.Errorf("expected non-empty EventID to be passed to repo")
+				}
+				if repo.savedEventID != repo.savedEvent.EventID {
+					t.Errorf("expected EventID passed to DB (%q) to match EventID inside JSON payload (%q)", repo.savedEventID, repo.savedEvent.EventID)
+				}
+
 			} else {
 				if err == nil {
 					t.Errorf("expected error, got nil")

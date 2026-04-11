@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/domain"
 )
@@ -16,12 +17,19 @@ func NewPostgresRepo(db *sql.DB) *PostgresRepo {
 	return &PostgresRepo{db: db}
 }
 
-func (r *PostgresRepo) Save(ctx context.Context, meetup *domain.Meetup) error {
-	query := `
+func (r *PostgresRepo) Save(ctx context.Context, meetup *domain.Meetup, eventID string, eventType string, eventPayload []byte) error {
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	queryMeetup := `
         INSERT INTO meetups (id, title, capacity, owner_user_id, status, created_at)
         VALUES ($1, $2, $3, $4, $5, $6)`
 
-	_, err := r.db.ExecContext(ctx, query,
+	_, err = tx.ExecContext(ctx, queryMeetup,
 		string(meetup.ID),
 		meetup.Title,
 		meetup.Capacity,
@@ -29,8 +37,25 @@ func (r *PostgresRepo) Save(ctx context.Context, meetup *domain.Meetup) error {
 		string(meetup.Status),
 		meetup.CreatedAt,
 	)
+	if err != nil {
+		return err
+	}
 
-	return err
+	queryOutbox := `
+        INSERT INTO outbox_events (id, event_type, payload, created_at)
+        VALUES ($1, $2, $3, $4)`
+
+	_, err = tx.ExecContext(ctx, queryOutbox,
+		eventID,
+		eventType,
+		eventPayload,
+		time.Now().UTC(),
+	)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 func (r *PostgresRepo) GetByID(ctx context.Context, id domain.MeetupID) (*domain.Meetup, error) {

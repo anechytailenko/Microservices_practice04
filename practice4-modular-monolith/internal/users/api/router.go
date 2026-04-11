@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/anechytailenko/Microservices_practice04/internal/shared"
+	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 	"github.com/anechytailenko/Microservices_practice04/internal/users/features/create_user"
 	"github.com/anechytailenko/Microservices_practice04/internal/users/features/get_user"
 )

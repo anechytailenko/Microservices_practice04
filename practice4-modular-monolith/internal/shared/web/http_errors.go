@@ -1,22 +1,24 @@
-package shared
+package web
 
 import (
 	"errors"
 	"net/http"
+
+	"github.com/anechytailenko/Microservices_practice04/internal/shared"
 )
 
 func HandleError(w http.ResponseWriter, err error) {
-	var sharedErr Error
+	var sharedErr shared.Error
 
 	if errors.As(err, &sharedErr) {
 		switch sharedErr.Type {
-		case ErrorTypeValidation:
+		case shared.ErrorTypeValidation:
 			http.Error(w, sharedErr.Message, http.StatusBadRequest)
-		case ErrorTypeConflict:
+		case shared.ErrorTypeConflict:
 			http.Error(w, sharedErr.Message, http.StatusConflict)
-		case ErrorTypeNotFound:
+		case shared.ErrorTypeNotFound:
 			http.Error(w, sharedErr.Message, http.StatusNotFound)
-		case ErrorTypeServiceUnavailable:
+		case shared.ErrorTypeServiceUnavailable:
 			http.Error(w, sharedErr.Message, http.StatusServiceUnavailable)
 		default:
 			http.Error(w, sharedErr.Message, http.StatusBadRequest)

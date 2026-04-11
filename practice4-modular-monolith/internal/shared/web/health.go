@@ -1,4 +1,4 @@
-package shared
+package web
 
 import (
 	"context"
@@ -29,6 +29,20 @@ func RegisterHealthRoutes(mux *http.ServeMux, db *sql.DB, serviceName string, co
 	})
 
 	mux.HandleFunc("GET /health/ready", func(w http.ResponseWriter, r *http.Request) {
+
+		if db == nil {
+			resp := HealthResponse{
+				Status:  "UP",
+				Service: serviceName,
+				Commit:  commitHash,
+				Checks: map[string]string{
+					"database": "skipped (no database attached)",
+				},
+			}
+			WriteJSON(w, http.StatusOK, resp)
+			return
+		}
+
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()
 

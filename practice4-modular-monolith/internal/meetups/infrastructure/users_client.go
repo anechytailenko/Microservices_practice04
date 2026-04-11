@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
 )
 
 type UsersClient struct {
@@ -31,6 +32,9 @@ func (c *UsersClient) ValidateUserExists(ctx context.Context, userID string) err
 	if err != nil {
 		return err
 	}
+
+	corrID := ctxutil.GetCorrelationID(ctx)
+	req.Header.Set("X-Correlation-Id", corrID)
 
 	resp, err := c.client.Do(req)
 	if err != nil {

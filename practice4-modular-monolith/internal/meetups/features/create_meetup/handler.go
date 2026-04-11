@@ -2,15 +2,18 @@ package create_meetup
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/domain"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/events"
 )
 
 type Repository interface {
-	Save(ctx context.Context, meetup *domain.Meetup) error
+	Save(ctx context.Context, meetup *domain.Meetup, eventID string, eventType string, eventPayload []byte) error
 }
 
-// interface that is implemented by http-client
 type UserValidator interface {
 	ValidateUserExists(ctx context.Context, userID string) error
 }
@@ -37,7 +40,23 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) (domain.MeetupID, err
 		return "", err
 	}
 
-	if err := h.repo.Save(ctx, meetup); err != nil {
+	evt := events.NewMeetupCreatedEventBuilder().
+		WithCorrelationID(ctxutil.GetCorrelationID(ctx)).
+		WithMeetupData(
+			string(meetup.ID),
+			meetup.OwnerUserID,
+			meetup.Title,
+			string(meetup.Status),
+			meetup.Capacity,
+		).
+		Build()
+
+	payloadBytes, err := json.Marshal(evt)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal outbox event: %w", err)
+	}
+
+	if err := h.repo.Save(ctx, meetup, evt.EventID, "meetup.created", payloadBytes); err != nil {
 		return "", err
 	}
 

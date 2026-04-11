@@ -1,15 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/gateway/reverseproxy"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 )
 
-// this var will be rewritten by compiler when we would build
 var CommitHash string = "unknown"
 
 func main() {
@@ -40,22 +39,13 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{
-			"status":  "UP",
-			"service": "gateway",
-			"commit":  CommitHash,
-		})
-	})
+	web.RegisterHealthRoutes(mux, nil, "gateway", CommitHash)
 
+	mux.Handle("/users", http.StripPrefix("/users", usersProxy))
 	mux.Handle("/users/", http.StripPrefix("/users", usersProxy))
-	mux.Handle("POST /users", http.StripPrefix("/users", usersProxy))
 
+	mux.Handle("/meetups", http.StripPrefix("/meetups", meetupsProxy))
 	mux.Handle("/meetups/", http.StripPrefix("/meetups", meetupsProxy))
-	mux.Handle("POST /meetups", http.StripPrefix("/meetups", meetupsProxy))
-	mux.Handle("PATCH /meetups/", http.StripPrefix("/meetups", meetupsProxy))
 
 	finalHandler := reverseproxy.CorrelationID(mux)
 

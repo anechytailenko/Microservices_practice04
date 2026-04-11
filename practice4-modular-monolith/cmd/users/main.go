@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/anechytailenko/Microservices_practice04/internal/shared"
+	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 	users_api "github.com/anechytailenko/Microservices_practice04/internal/users/api"
 	"github.com/anechytailenko/Microservices_practice04/internal/users/features/create_user"
 	"github.com/anechytailenko/Microservices_practice04/internal/users/features/get_user"
