@@ -29,7 +29,8 @@ func NewPostgresRepo(db *sqlx.DB) *PostgresRepo {
 func (r *PostgresRepo) SaveNotification(ctx context.Context, eventID, correlationID, ownerUserID string, payload []byte) error {
 	query := `
 		INSERT INTO notifications (event_id, correlation_id, owner_user_id, payload, received_at)
-		VALUES ($1, $2, $3, $4, $5)`
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (event_id) DO NOTHING`
 
 	_, err := r.db.ExecContext(ctx, query, eventID, correlationID, ownerUserID, payload, time.Now().UTC())
 	return err
