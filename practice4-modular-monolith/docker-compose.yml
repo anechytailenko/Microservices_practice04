@@ -13,10 +13,11 @@ services:
       - "${RABBITMQ_PORT}:${RABBITMQ_PORT}"
       - "${RABBITMQ_UI_PORT}:${RABBITMQ_UI_PORT}"
     healthcheck:
-      test: rabbitmq-diagnostics -q ping
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "check_port_connectivity" ]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   # ==========================================
   # DATABASES
@@ -39,6 +40,7 @@ services:
       POSTGRES_USER: ${MEETUPS_DB_USER}
       POSTGRES_PASSWORD: ${MEETUPS_DB_PASSWORD}
       POSTGRES_DB: ${MEETUPS_DB_NAME}
+    restart: on-failure
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${MEETUPS_DB_USER} -d ${MEETUPS_DB_NAME}" ]
       interval: 2s
@@ -51,6 +53,7 @@ services:
       POSTGRES_USER: ${NOTIF_DB_USER}
       POSTGRES_PASSWORD: ${NOTIF_DB_PASSWORD}
       POSTGRES_DB: ${NOTIF_DB_NAME}
+    restart: on-failure
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${NOTIF_DB_USER} -d ${NOTIF_DB_NAME}" ]
       interval: 2s
@@ -130,7 +133,7 @@ services:
         - COMMIT_HASH=${COMMIT_HASH:-unknown}
     environment:
       - PORT=${SERVICE_PORT}
-      - NOTIFICATION_DB_URL=postgres://${NOTIF_DB_USER}:${NOTIF_DB_PASSWORD}@notification-db:${POSTGRES_PORT}/${NOTIF_DB_NAME}?sslmode=disable
+      - NOTIFICATIONS_DB_URL=postgres://${NOTIF_DB_USER}:${NOTIF_DB_PASSWORD}@notification-db:${POSTGRES_PORT}/${NOTIF_DB_NAME}?sslmode=disable
       - RABBITMQ_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:${RABBITMQ_PORT}/
     depends_on:
       notification-migrate:
@@ -153,6 +156,11 @@ services:
       - PORT=${SERVICE_PORT}
       - MEETUPS_SERVICE_URL=http://meetups-service:${SERVICE_PORT}
       - USERS_SERVICE_URL=http://users-service:${SERVICE_PORT}
+      - NOTIFICATION_SERVICE_URL=http://notification-service:${SERVICE_PORT}
     depends_on:
-      - meetups-service
-      - users-service
+      meetups-service:
+        condition: service_started
+      users-service:
+        condition: service_started
+      notification-service:
+        condition: service_started

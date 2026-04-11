@@ -22,6 +22,11 @@ func main() {
 		log.Fatal("USERS_SERVICE_URL is not set")
 	}
 
+	notificationsURL := os.Getenv("NOTIFICATION_SERVICE_URL")
+	if notificationsURL == "" {
+		log.Fatal("NOTIFICATION_SERVICE_URL is not set")
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -37,6 +42,11 @@ func main() {
 		log.Fatalf("Failed to create users proxy: %v", err)
 	}
 
+	notificationsProxy, err := reverseproxy.NewProxy(notificationsURL)
+	if err != nil {
+		log.Fatalf("Failed to create notifications proxy: %v", err)
+	}
+
 	mux := http.NewServeMux()
 
 	web.RegisterHealthRoutes(mux, nil, "gateway", CommitHash)
@@ -46,6 +56,8 @@ func main() {
 
 	mux.Handle("/meetups", http.StripPrefix("/meetups", meetupsProxy))
 	mux.Handle("/meetups/", http.StripPrefix("/meetups", meetupsProxy))
+
+	mux.Handle("/notifications/", http.StripPrefix("/notifications", notificationsProxy))
 
 	finalHandler := reverseproxy.CorrelationID(mux)
 

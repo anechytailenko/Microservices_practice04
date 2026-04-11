@@ -127,13 +127,6 @@ curl -i -X POST http://localhost:8080/meetups \
          }'
 ```
 
-curl -i -X POST http://localhost:8080/meetups \
-     -H "Content-Type: application/json" \
-     -d '{
-           "title": "Golang Microservices Workshop",
-           "capacity": 50,
-           "owner_user_id": "dff26c82-e955-4d93-8d0f-d0326e178e1b"
-         }'
 
 
 ```bash
@@ -149,4 +142,23 @@ curl -i -X PATCH http://localhost:8080/meetups/<MEETUP_ID>/status \
 ```
 
 
+--- 
+
+## Pracitce 6
+
+```bash
+docker-compose down -v --remove-orphans
+```
+
+```bash
+COMMIT_HASH=$(git rev-parse --short HEAD) docker-compose build --no-cache
+```
+
+```bash
+docker-compose up
+```
+
+```bash
+curl -i -X GET http://localhost:8080/notifications/<USER_ID>
+```
 
