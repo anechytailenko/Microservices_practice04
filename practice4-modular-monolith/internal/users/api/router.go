@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
@@ -25,6 +26,7 @@ func RegisterRoutes(
 
 		id, err := createHandler.Handle(r.Context(), cmd)
 		if err != nil {
+			log.Printf("[ERROR] Failed to create user: %v", err)
 			shared.HandleError(w, err)
 			return
 		}
@@ -40,6 +42,7 @@ func RegisterRoutes(
 
 		dto, err := getUserHandler.Handle(r.Context(), q)
 		if err != nil {
+			log.Printf("[ERROR] Failed to get user: %v", err)
 			shared.HandleError(w, err)
 			return
 		}

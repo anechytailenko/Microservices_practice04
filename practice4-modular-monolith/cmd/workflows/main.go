@@ -8,30 +8,18 @@ import (
 	"os"
 	"time"
 
-<<<<<<< Updated upstream
-	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/database"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
-	users_api "github.com/anechytailenko/Microservices_practice04/internal/users/api"
-	"github.com/anechytailenko/Microservices_practice04/internal/users/features/create_user"
-	"github.com/anechytailenko/Microservices_practice04/internal/users/features/get_user"
-	"github.com/anechytailenko/Microservices_practice04/internal/users/infrastructure"
+	workflow_api "github.com/anechytailenko/Microservices_practice04/internal/workflows/api"
+	"github.com/anechytailenko/Microservices_practice04/internal/workflows/features/create_workflow"
+	"github.com/anechytailenko/Microservices_practice04/internal/workflows/features/get_workflow"
+	"github.com/anechytailenko/Microservices_practice04/internal/workflows/infrastructure"
 	"github.com/anechytailenko/Microservices_practice04/migrations"
 
 	_ "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
-
-// this var will be rewritten by compiler when we would build
 
 func main() {
 	var CommitHash string
@@ -44,9 +32,9 @@ func main() {
 		port = "8080"
 	}
 
-	dbURL := os.Getenv("USERS_DB_URL")
+	dbURL := os.Getenv("WORKFLOW_DB_URL")
 	if dbURL == "" {
-		log.Fatal("USERS_DB_URL is not set")
+		log.Fatal("WORKFLOW_DB_URL is not set")
 	}
 
 	rabbitMQURL := os.Getenv("RABBITMQ_URL")
@@ -59,9 +47,9 @@ func main() {
 		exchangeName = "domain.events"
 	}
 
-	queueName := os.Getenv("USERS_QUEUE")
+	queueName := os.Getenv("WORKFLOW_QUEUE")
 	if queueName == "" {
-		queueName = "users.workflow_commands"
+		queueName = "workflow.saga_events"
 	}
 
 	dlxName := os.Getenv("EVENTS_DLX")
@@ -69,14 +57,14 @@ func main() {
 		dlxName = "events.dlx"
 	}
 
-	dlqName := os.Getenv("USERS_DLQ")
+	dlqName := os.Getenv("WORKFLOW_DLQ")
 	if dlqName == "" {
-		dlqName = "users.dlq"
+		dlqName = "workflow.dlq"
 	}
 
 	consumerName := os.Getenv("CONSUMER_NAME")
 	if consumerName == "" {
-		consumerName = "users_service"
+		consumerName = "workflow_service"
 	}
 
 	db, err := sql.Open("postgres", dbURL)
@@ -85,40 +73,28 @@ func main() {
 	}
 	defer db.Close()
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
 	// proccess of migration that will run as the seperate Job in kubernetes
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
-		log.Println("Starting migration process for users...")
-		if err := database.RunMigrations(db, migrations.FS, "users"); err != nil {
-			log.Fatalf("Fatal error running users migrations: %v", err)
+		log.Println("Starting  migration process for workflows...")
+		if err := database.RunMigrations(db, migrations.FS, "workflows"); err != nil {
+			log.Fatalf("Fatal error running workflow migrations: %v", err)
 		}
 		log.Println("Migrations finished successfully. Exiting.")
 		db.Close()
 		os.Exit(0)
 	}
 
->>>>>>> Stashed changes
 	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ publisher: %v", err)
 	}
 	defer publisher.Close()
 
-<<<<<<< Updated upstream
-	bindingKeys := []string{"commands.users.*"}
-=======
-	if err := database.RunMigrations(db, migrations.FS, "users"); err != nil {
-		log.Fatalf("Fatal error running users migrations: %v", err)
+	if err := database.RunMigrations(db, migrations.FS, "workflows"); err != nil {
+		log.Fatalf("Fatal error running workflow migrations: %v", err)
 	}
 
-	bindingKeys := []string{"commands.users.#"}
->>>>>>> Stashed changes
+	bindingKeys := []string{"events.#"}
 
 	subscriber, msgsChan, err := rabbitmq.NewSubscriber(
 		rabbitMQURL,
@@ -134,10 +110,6 @@ func main() {
 	}
 	defer subscriber.Close()
 
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 	repo := infrastructure.NewPostgresRepo(db)
 
 	outboxWorker := infrastructure.NewOutboxWorker(db, publisher)
@@ -146,15 +118,18 @@ func main() {
 	consumerWorker := infrastructure.NewConsumerWorker(db, repo, msgsChan)
 	go consumerWorker.Start(context.Background())
 
-	createHandler := create_user.NewHandler(repo)
-	getUserHandler := get_user.NewHandler(repo)
+	timeoutWorker := infrastructure.NewTimeoutWorker(db, repo, 30*time.Second)
+	go timeoutWorker.Start(context.Background(), 10*time.Second)
+
+	createHandler := create_workflow.NewHandler(repo)
+	getHandler := get_workflow.NewHandler(repo)
 
 	mux := http.NewServeMux()
 
-	shared.RegisterHealthRoutes(mux, db, "users", CommitHash)
-	users_api.RegisterRoutes(mux, createHandler, getUserHandler)
+	shared.RegisterHealthRoutes(mux, db, "workflow", CommitHash)
+	workflow_api.RegisterRoutes(mux, createHandler, getHandler)
 
-	log.Printf("Starting server on port %s...", port)
+	log.Printf("Starting Workflow Service on port %s...", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}

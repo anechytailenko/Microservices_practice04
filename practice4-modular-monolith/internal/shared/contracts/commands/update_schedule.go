@@ -1,6 +1,10 @@
 package commands
 
+<<<<<<< Updated upstream
 const UpdateScheduleType = "users.schedule.update"
+=======
+const UpdateScheduleType = "commands.users.schedule.update"
+>>>>>>> Stashed changes
 
 type UpdateSchedule struct {
 	WorkflowID    string `json:"workflowId"`

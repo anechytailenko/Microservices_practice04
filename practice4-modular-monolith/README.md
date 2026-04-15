@@ -162,3 +162,126 @@ docker-compose up
 curl -i -X GET http://localhost:8080/notifications/<USER_ID>
 ```
 
+
+
+## Practice 7
+
+Linux:
+```bash
+chmod +x installation/setup.sh
+./installation/setup.sh
+```
+
+Windows:
+```bash
+.\installation\setup.ps1
+```
+
+
+
+```bash
+curl -i -X GET http://localhost:8080/health/live
+```
+```bash
+curl -i -X GET http://localhost:8080/health/ready
+```
+
+```bash
+curl -i -X GET http://localhost:8080/users/health/live
+```
+```bash
+curl -i -X GET http://localhost:8080/users/health/ready
+```
+
+```bash
+curl -i -X GET http://localhost:8080/meetups/health/live
+```
+```bash
+curl -i -X GET http://localhost:8080/meetups/health/ready
+```
+
+```bash
+curl -i -X GET http://localhost:8080/notifications/health/live
+```
+```bash
+curl -i -X GET http://localhost:8080/notifications/health/ready
+``
+
+```bash
+curl -i -X GET http://localhost:8080/workflows/health/live
+```
+```bash
+curl -i -X GET http://localhost:8080/workflows/health/ready
+``
+
+
+087a3f4e-b324-43bf-b412-65c84dae680c
+```bash
+curl -i -X POST http://localhost:8080/meetups \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Go Kubernetes Workshop",
+           "capacity": 100,
+           "owner_user_id": "<USER_ID>"
+         }'
+```
+
+curl -i -X POST http://localhost:8080/meetups \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Go Kubernetes Workshop",
+           "capacity": 100,
+           "owner_user_id": "3241e8ff-3caf-4eca-be20-08ff6048e30c"
+         }'
+
+
+
+
+
+```bash
+curl -X GET http://localhost:8080/meetups/c3947ae5-fc39-46b6-bb95-e15c47b6a279
+```
+
+```bash
+curl -X PATCH http://localhost:8080/meetups/<MEETUP_ID>/status \
+     -H "Content-Type: application/json" \
+     -d '{"status": "<STATUS>"}'
+```
+
+
+
+342d5af2-6374-4193-9c2c-bbc7ae213729
+```bash
+curl -i -X POST http://localhost:8080/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "first_name": "John",
+           "last_name": "Doe",
+           "email": "john.doe@example.com"
+         }'
+```
+
+```bash
+curl -X GET http://localhost:8080/users/031b81e8-9189-445d-b9c5-9fde686f81bc
+```
+
+
+
+
+
+```bash
+curl -X GET http://localhost:8080/notifications/031b81e8-9189-445d-b9c5-9fde686f81bc
+```
+
+
+```bash
+curl -X POST http://localhost:8080/workflows/join-meetup \
+     -H "Content-Type: application/json" \
+     -d '{"userId": "<USER_ID>", "meetupId": "<MEETUP_ID>"}'
+```
+
+
+```bash
+curl -X GET http://localhost:8080/workflows/<WORKFLOW_ID>
+```
+

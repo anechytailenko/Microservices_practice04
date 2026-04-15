@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: saga-system
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: saga-system
+type: Opaque
+data:
+  RABBITMQ_PASSWORD: c2VjcmV0X3Bhc3N3b3Jk 
+  DB_PASSWORD: c2VjcmV0X3Bhc3N3b3Jk
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: saga-system
+data:
+  RABBITMQ_USER: "guest"
+  RABBITMQ_URL: "amqp://guest:secret_password@rabbitmq:5672/"
+  SERVICE_PORT: "8080"
+  USERS_DB_URL: "postgres://user_user:secret_password@users-db:5432/users_db?sslmode=disable"
+  MEETUPS_DB_URL: "postgres://meetup_user:secret_password@meetups-db:5432/meetups_db?sslmode=disable"
+  NOTIFICATIONS_DB_URL: "postgres://notif_user:secret_password@notification-db:5432/notification_db?sslmode=disable"
+  WORKFLOW_DB_URL: "postgres://workflow_user:secret_password@workflow-db:5432/workflow_db?sslmode=disable"
+  USERS_SERVICE_URL: "http://users-service:8080"
+  MEETUPS_SERVICE_URL: "http://meetups-service:8080"
+  NOTIFICATION_SERVICE_URL: "http://notification-service:8080"
+  WORKFLOW_SERVICE_URL: "http://workflow-service:8080"

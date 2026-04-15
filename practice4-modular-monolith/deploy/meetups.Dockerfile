@@ -29,4 +29,4 @@ COPY --from=builder /app/meetups-service .
 
 EXPOSE 8080
 
-CMD ["./meetups-service"]
+ENTRYPOINT ["./meetups-service"]

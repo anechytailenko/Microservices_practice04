@@ -13,16 +13,21 @@ import (
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/create_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/get_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/infrastructure"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/database"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
+	"github.com/anechytailenko/Microservices_practice04/migrations"
 
 	_ "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
-var CommitHash string = "unknown"
-
 func main() {
+	var CommitHash string
+	if envHash := os.Getenv("COMMIT_HASH"); envHash != "" {
+		CommitHash = envHash
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -74,13 +79,44 @@ func main() {
 	}
 	defer db.Close()
 
+<<<<<<< Updated upstream
 	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, "domain.events")
+=======
+=======
+>>>>>>> Stashed changes
+	// proccess of migration that will run as the seperate Job in kubernetes
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		log.Println("Starting  migration process for meetups...")
+		if err := database.RunMigrations(db, migrations.FS, "meetups"); err != nil {
+			log.Fatalf("Fatal error running meetups migrations: %v", err)
+		}
+		log.Println("Migrations finished successfully. Exiting.")
+		db.Close()
+		os.Exit(0)
+	}
+
+	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ publisher: %v", err)
 	}
 	defer publisher.Close()
 
+<<<<<<< Updated upstream
 	bindingKeys := []string{"commands.meetups.*"}
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+=======
+>>>>>>> Stashed changes
+	bindingKeys := []string{"commands.meetups.#"}
+>>>>>>> Stashed changes
 
 	subscriber, msgsChan, err := rabbitmq.NewSubscriber(
 		rabbitMQURL,
@@ -96,6 +132,10 @@ func main() {
 	}
 	defer subscriber.Close()
 
+<<<<<<< Updated upstream
+=======
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 	outboxWorker := infrastructure.NewOutboxWorker(db, publisher)
 	go outboxWorker.Start(context.Background(), 2*time.Second)
 
