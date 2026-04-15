@@ -8,20 +8,25 @@ import (
 	"os"
 	"time"
 
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/database"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 	workflow_api "github.com/anechytailenko/Microservices_practice04/internal/workflows/api"
 	"github.com/anechytailenko/Microservices_practice04/internal/workflows/features/create_workflow"
 	"github.com/anechytailenko/Microservices_practice04/internal/workflows/features/get_workflow"
 	"github.com/anechytailenko/Microservices_practice04/internal/workflows/infrastructure"
+	"github.com/anechytailenko/Microservices_practice04/migrations"
 
 	_ "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
-var CommitHash string = "unknown"
-
 func main() {
+	var CommitHash string
+	if envHash := os.Getenv("COMMIT_HASH"); envHash != "" {
+		CommitHash = envHash
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -68,11 +73,26 @@ func main() {
 	}
 	defer db.Close()
 
+	// proccess of migration that will run as the seperate Job in kubernetes
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		log.Println("Starting  migration process for workflows...")
+		if err := database.RunMigrations(db, migrations.FS, "workflows"); err != nil {
+			log.Fatalf("Fatal error running workflow migrations: %v", err)
+		}
+		log.Println("Migrations finished successfully. Exiting.")
+		db.Close()
+		os.Exit(0)
+	}
+
 	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ publisher: %v", err)
 	}
 	defer publisher.Close()
+
+	if err := database.RunMigrations(db, migrations.FS, "workflows"); err != nil {
+		log.Fatalf("Fatal error running workflow migrations: %v", err)
+	}
 
 	bindingKeys := []string{"events.#"}
 

@@ -1,6 +1,10 @@
 package commands
 
+<<<<<<< Updated upstream
 const ReserveSeatType = "meetups.seat.reserve"
+=======
+const ReserveSeatType = "commands.meetups.seat.reserve"
+>>>>>>> Stashed changes
 
 type ReserveSeat struct {
 	WorkflowID    string `json:"workflowId"`

@@ -1,0 +1,187 @@
+---
+# ==========================================
+# 1. USERS DB
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-db
+  namespace: saga-system
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: users-db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: users-db
+  namespace: saga-system
+spec:
+  serviceName: users-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-db
+  template:
+    metadata:
+      labels:
+        app: users-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "user_user"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DB_PASSWORD
+            - name: POSTGRES_DB
+              value: "users_db"
+
+---
+# ==========================================
+# 2. MEETUPS DB
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: meetups-db
+  namespace: saga-system
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: meetups-db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: meetups-db
+  namespace: saga-system
+spec:
+  serviceName: meetups-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meetups-db
+  template:
+    metadata:
+      labels:
+        app: meetups-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "meetup_user"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DB_PASSWORD
+            - name: POSTGRES_DB
+              value: "meetups_db"
+
+---
+# ==========================================
+# 3. NOTIFICATIONS DB
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-db
+  namespace: saga-system
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: notification-db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: notification-db
+  namespace: saga-system
+spec:
+  serviceName: notification-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-db
+  template:
+    metadata:
+      labels:
+        app: notification-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "notif_user"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DB_PASSWORD
+            - name: POSTGRES_DB
+              value: "notification_db"
+
+---
+# ==========================================
+# 4. WORKFLOW DB
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-db
+  namespace: saga-system
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: workflow-db
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: workflow-db
+  namespace: saga-system
+spec:
+  serviceName: workflow-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workflow-db
+  template:
+    metadata:
+      labels:
+        app: workflow-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "workflow_user"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DB_PASSWORD
+            - name: POSTGRES_DB
+              value: "workflow_db"

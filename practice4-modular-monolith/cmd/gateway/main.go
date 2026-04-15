@@ -9,9 +9,12 @@ import (
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 )
 
-var CommitHash string = "unknown"
-
 func main() {
+	var CommitHash string
+	if envHash := os.Getenv("COMMIT_HASH"); envHash != "" {
+		CommitHash = envHash
+	}
+
 	meetupsURL := os.Getenv("MEETUPS_SERVICE_URL")
 	if meetupsURL == "" {
 		log.Fatal("MEETUPS_SERVICE_URL is not set")

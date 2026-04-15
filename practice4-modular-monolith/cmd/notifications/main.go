@@ -9,17 +9,22 @@ import (
 	"github.com/anechytailenko/Microservices_practice04/internal/notifications/api"
 	"github.com/anechytailenko/Microservices_practice04/internal/notifications/features/get_notifications"
 	"github.com/anechytailenko/Microservices_practice04/internal/notifications/infrastructure"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/database"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
+	"github.com/anechytailenko/Microservices_practice04/migrations"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
-var CommitHash string = "unknown"
-
 func main() {
+	var CommitHash string
+	if envHash := os.Getenv("COMMIT_HASH"); envHash != "" {
+		CommitHash = envHash
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -66,11 +71,40 @@ func main() {
 	}
 	defer db.Close()
 
+<<<<<<< Updated upstream
 	bindingKeys := []string{
 		"commands.notifications.*",
 		"events.meetups.created",
 	}
 
+=======
+<<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+=======
+>>>>>>> Stashed changes
+	// proccess of migration that will run as the seperate Job in kubernetes
+	if len(os.Args) > 1 && os.Args[1] == "migrate" {
+		log.Println("Starting  migration process for notifications...")
+		if err := database.RunMigrations(db.DB, migrations.FS, "notifications"); err != nil {
+			log.Fatalf("Fatal error running notifications migrations: %v", err)
+		}
+		log.Println("Migrations finished successfully. Exiting.")
+		db.Close()
+		os.Exit(0)
+	}
+
+	if err := database.RunMigrations(db.DB, migrations.FS, "notifications"); err != nil {
+		log.Fatalf("Fatal error running notifications migrations: %v", err)
+	}
+
+	bindingKeys := []string{
+		"commands.notifications.#",
+		"events.meetups.created",
+	}
+
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
 	subscriber, msgsChan, err := rabbitmq.NewSubscriber(
 		rabbitMQURL,
 		exchangeName,

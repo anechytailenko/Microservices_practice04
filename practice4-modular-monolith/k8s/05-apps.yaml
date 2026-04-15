@@ -1,0 +1,220 @@
+# ==========================================
+# 1. USERS SERVICE
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+  namespace: saga-system
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: users-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: saga-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      containers:
+        - name: app
+          image: anna13nechytailenko/saga-users:v1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: COMMIT_HASH
+              value: "{{COMMIT_HASH}}"
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+---
+# ==========================================
+# 2. MEETUPS SERVICE
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: meetups-service
+  namespace: saga-system
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: meetups-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: meetups-service
+  namespace: saga-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: meetups-service
+  template:
+    metadata:
+      labels:
+        app: meetups-service
+    spec:
+      containers:
+        - name: app
+          image: anna13nechytailenko/saga-meetups:v1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: COMMIT_HASH
+              value: "{{COMMIT_HASH}}"
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+---
+# ==========================================
+# 3. NOTIFICATIONS SERVICE
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+  namespace: saga-system
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: notification-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+  namespace: saga-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notification-service
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: app
+          image: anna13nechytailenko/saga-notifications:v1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: COMMIT_HASH
+              value: "{{COMMIT_HASH}}"
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+---
+# ==========================================
+# 4. WORKFLOW SERVICE
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: workflow-service
+  namespace: saga-system
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: workflow-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workflow-service
+  namespace: saga-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workflow-service
+  template:
+    metadata:
+      labels:
+        app: workflow-service
+    spec:
+      containers:
+        - name: app
+          image: anna13nechytailenko/saga-workflow:v1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: COMMIT_HASH
+              value: "{{COMMIT_HASH}}"
+          envFrom:
+            - configMapRef:
+                name: app-config
+
+---
+# ==========================================
+# 5. API GATEWAY
+# ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+  namespace: saga-system
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+  selector:
+    app: gateway
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: saga-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      containers:
+        - name: app
+          image: anna13nechytailenko/saga-gateway:v1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          env:
+            - name: COMMIT_HASH
+              value: "{{COMMIT_HASH}}"
+          envFrom:
+            - configMapRef:
+                name: app-config

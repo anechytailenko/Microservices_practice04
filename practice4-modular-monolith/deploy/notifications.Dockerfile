@@ -28,4 +28,4 @@ COPY --from=builder /app/notification-service .
 
 EXPOSE 8080
 
-CMD ["./notification-service"]
+ENTRYPOINT ["./notification-service"]

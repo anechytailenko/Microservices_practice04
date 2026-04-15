@@ -51,17 +51,26 @@ func TestWorkflow_ChangeState(t *testing.T) {
 		expectError bool
 	}{
 		{"Initializing -> SeatReserved", StateInitializing, StateSeatReserved, false},
+<<<<<<< Updated upstream
 		{"SeatReserved -> ScheduleUpdated", StateSeatReserved, StateScheduleUpdated, false},
 		{"ScheduleUpdated -> Completed", StateScheduleUpdated, StateCompleted, false},
 
 		{"SeatReserved -> CancelingSeat", StateSeatReserved, StateCancelingSeat, false},
 		{"CancelingSeat -> Failed", StateCancelingSeat, StateFailed, false},
 		{"CancelingSeat -> ManualIntervention", StateCancelingSeat, StateManualIntervention, false},
+=======
+		{"SeatReserved -> Completed", StateSeatReserved, StateCompleted, false},
+		{"SeatReserved -> CancelingSeat", StateSeatReserved, StateCancelingSeat, false},
+		{"CancelingSeat -> Failed", StateCancelingSeat, StateFailed, false},
+>>>>>>> Stashed changes
 
 		{"Initializing -> Completed (Skip steps)", StateInitializing, StateCompleted, true},
 		{"Completed -> Failed (Modify terminal)", StateCompleted, StateFailed, true},
 		{"Failed -> Initializing (Restart from terminal)", StateFailed, StateInitializing, true},
+<<<<<<< Updated upstream
 		{"ScheduleUpdated -> CancelingSeat (Too late to cancel)", StateScheduleUpdated, StateCancelingSeat, true},
+=======
+>>>>>>> Stashed changes
 	}
 
 	for _, tt := range tests {
@@ -87,6 +96,7 @@ func TestWorkflow_ChangeState(t *testing.T) {
 		})
 	}
 }
+<<<<<<< Updated upstream
 
 func TestWorkflow_MarkAsFailed(t *testing.T) {
 	w := &Workflow{
@@ -111,3 +121,5 @@ func TestWorkflow_MarkAsFailed(t *testing.T) {
 		t.Errorf("expected error when failing from non-allowed transition")
 	}
 }
+=======
+>>>>>>> Stashed changes

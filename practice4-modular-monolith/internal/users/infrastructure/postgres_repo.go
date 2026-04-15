@@ -32,7 +32,14 @@ func (r *PostgresRepo) Save(ctx context.Context, user *domain.User) error {
 		pq.Array(user.Meetups),
 	)
 
-	return err
+	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return shared.NewValidationError("user with this email already exists")
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (r *PostgresRepo) GetByID(ctx context.Context, id domain.UserID) (*domain.User, error) {

@@ -1,6 +1,10 @@
 package events
 
+<<<<<<< Updated upstream
 const SeatReservationFailedEventType = "meetups.seat.reservation_failed"
+=======
+const SeatReservationFailedEventType = "events.meetups.seat.reservation_failed"
+>>>>>>> Stashed changes
 
 type SeatReservationFailed struct {
 	WorkflowID    string `json:"workflowId"`
