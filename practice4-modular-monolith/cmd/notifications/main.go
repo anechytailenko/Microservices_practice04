@@ -71,18 +71,6 @@ func main() {
 	}
 	defer db.Close()
 
-<<<<<<< Updated upstream
-	bindingKeys := []string{
-		"commands.notifications.*",
-		"events.meetups.created",
-	}
-
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
 	// proccess of migration that will run as the seperate Job in kubernetes
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
 		log.Println("Starting  migration process for notifications...")
@@ -103,8 +91,6 @@ func main() {
 		"events.meetups.created",
 	}
 
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 	subscriber, msgsChan, err := rabbitmq.NewSubscriber(
 		rabbitMQURL,
 		exchangeName,

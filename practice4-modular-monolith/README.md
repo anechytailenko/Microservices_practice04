@@ -215,7 +215,7 @@ curl -i -X GET http://localhost:8080/workflows/health/ready
 ``
 
 
-087a3f4e-b324-43bf-b412-65c84dae680c
+
 ```bash
 curl -i -X POST http://localhost:8080/meetups \
      -H "Content-Type: application/json" \
@@ -226,20 +226,8 @@ curl -i -X POST http://localhost:8080/meetups \
          }'
 ```
 
-curl -i -X POST http://localhost:8080/meetups \
-     -H "Content-Type: application/json" \
-     -d '{
-           "title": "Go Kubernetes Workshop",
-           "capacity": 100,
-           "owner_user_id": "3241e8ff-3caf-4eca-be20-08ff6048e30c"
-         }'
-
-
-
-
-
 ```bash
-curl -X GET http://localhost:8080/meetups/c3947ae5-fc39-46b6-bb95-e15c47b6a279
+curl -X GET http://localhost:8080/meetups/<MEETUP_ID>
 ```
 
 ```bash
@@ -248,9 +236,6 @@ curl -X PATCH http://localhost:8080/meetups/<MEETUP_ID>/status \
      -d '{"status": "<STATUS>"}'
 ```
 
-
-
-342d5af2-6374-4193-9c2c-bbc7ae213729
 ```bash
 curl -i -X POST http://localhost:8080/users \
      -H "Content-Type: application/json" \
@@ -262,17 +247,13 @@ curl -i -X POST http://localhost:8080/users \
 ```
 
 ```bash
-curl -X GET http://localhost:8080/users/031b81e8-9189-445d-b9c5-9fde686f81bc
+curl -X GET http://localhost:8080/users/<USER_ID>
 ```
-
-
-
 
 
 ```bash
-curl -X GET http://localhost:8080/notifications/031b81e8-9189-445d-b9c5-9fde686f81bc
+curl -X GET http://localhost:8080/notifications/<USER_ID>
 ```
-
 
 ```bash
 curl -X POST http://localhost:8080/workflows/join-meetup \
@@ -285,3 +266,6 @@ curl -X POST http://localhost:8080/workflows/join-meetup \
 curl -X GET http://localhost:8080/workflows/<WORKFLOW_ID>
 ```
 
+**To see compensation:**
+- 1 stage compensation : not existed meetupId
+- 2 stage compensation : not existed userId

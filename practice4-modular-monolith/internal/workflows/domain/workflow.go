@@ -57,14 +57,7 @@ func (w *Workflow) isValidTransition(newState WorkflowState) bool {
 		return newState == StateSeatReserved || newState == StateFailed
 
 	case StateSeatReserved:
-<<<<<<< Updated upstream
-		return newState == StateScheduleUpdated || newState == StateCancelingSeat
-
-	case StateScheduleUpdated:
-		return newState == StateCompleted
-=======
 		return newState == StateCompleted || newState == StateCancelingSeat
->>>>>>> Stashed changes
 
 	case StateCancelingSeat:
 		return newState == StateFailed || newState == StateManualIntervention

@@ -7,15 +7,15 @@ metadata:
   name: users-migration-job
   namespace: saga-system
 spec:
-  backoffLimit: 5 # Даем 5 попыток, если БД еще не успела подняться
+  backoffLimit: 5
   template:
     spec:
       restartPolicy: OnFailure
       containers:
         - name: users-migrator
           image: anna13nechytailenko/saga-users:v1.1
-          imagePullPolicy: Always
-          args: ["migrate"] # Тот самый волшебный триггер
+          imagePullPolicy: IfNotPresent
+          args: ["migrate"]
           envFrom:
             - configMapRef:
                 name: app-config
@@ -37,7 +37,7 @@ spec:
       containers:
         - name: meetups-migrator
           image: anna13nechytailenko/saga-meetups:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           args: ["migrate"]
           envFrom:
             - configMapRef:
@@ -60,7 +60,7 @@ spec:
       containers:
         - name: notifications-migrator
           image: anna13nechytailenko/saga-notifications:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           args: ["migrate"]
           envFrom:
             - configMapRef:
@@ -83,7 +83,7 @@ spec:
       containers:
         - name: workflow-migrator
           image: anna13nechytailenko/saga-workflow:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           args: ["migrate"]
           envFrom:
             - configMapRef:
