@@ -37,6 +37,7 @@ func (h *Handler) Handle(ctx context.Context, q Query) (*MeetupDTO, error) {
 		Capacity:    meetup.Capacity,
 		OwnerUserID: meetup.OwnerUserID,
 		Status:      string(meetup.Status),
+		Guests:      meetup.Guests,
 		CreatedAt:   meetup.CreatedAt,
 	}
 

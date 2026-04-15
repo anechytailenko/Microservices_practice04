@@ -9,6 +9,7 @@ const (
 	ErrorTypeConflict           ErrorType = "conflict"
 	ErrorTypeNotFound           ErrorType = "not_found"
 	ErrorTypeServiceUnavailable ErrorType = "service_unavailable"
+	ErrorTypeInternal           ErrorType = "internal"
 )
 
 type Error struct {
@@ -44,6 +45,13 @@ func NewNotFoundError(msg string, args ...any) Error {
 func NewServiceUnavailableError(msg string, args ...any) Error {
 	return Error{
 		Type:    ErrorTypeServiceUnavailable,
+		Message: fmt.Sprintf(msg, args...),
+	}
+}
+
+func NewInternalError(msg string, args ...any) Error {
+	return Error{
+		Type:    ErrorTypeInternal,
 		Message: fmt.Sprintf(msg, args...),
 	}
 }

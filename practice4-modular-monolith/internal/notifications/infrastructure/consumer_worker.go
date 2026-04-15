@@ -2,70 +2,69 @@ package infrastructure
 
 import (
 	"context"
-	"encoding/json"
+	"database/sql"
 	"log"
 
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/commands"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/events"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type ConsumerWorker struct {
+	db       *sql.DB
 	repo     *PostgresRepo
 	messages <-chan amqp.Delivery
 }
 
-func NewConsumerWorker(repo *PostgresRepo, msgs <-chan amqp.Delivery) *ConsumerWorker {
+func NewConsumerWorker(db *sql.DB, repo *PostgresRepo, msgs <-chan amqp.Delivery) *ConsumerWorker {
 	return &ConsumerWorker{
+		db:       db,
 		repo:     repo,
 		messages: msgs,
 	}
 }
 
 func (w *ConsumerWorker) Start(ctx context.Context) {
-	log.Println("[Notification Consumer] Started listening for events...")
+	log.Println("[Notifications Consumer] Started listening for events & commands...")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[Notification Consumer] Shutting down gracefully...")
+			log.Println("[Notifications Consumer] Shutting down gracefully...")
 			return
-
 		case d, ok := <-w.messages:
 			if !ok {
-				log.Println("[Notification Consumer] Message channel closed")
+				log.Println("[Notifications Consumer] Message channel closed")
 				return
 			}
-
 			w.processEvent(ctx, d)
 		}
 	}
 }
 
 func (w *ConsumerWorker) processEvent(ctx context.Context, d amqp.Delivery) {
-	var partialEvent struct {
-		EventID       string `json:"eventId"`
-		CorrelationID string `json:"correlationId"`
-		OwnerUserID   string `json:"ownerUserId"`
-	}
-
-	if err := json.Unmarshal(d.Body, &partialEvent); err != nil {
-		log.Printf("[Notification Consumer] Invalid JSON payload: %v. NACKing (sending to DLQ)...", err)
-		d.Nack(false, false)
-		return
-	}
-
-	err := w.repo.SaveNotification(
-		ctx,
-		partialEvent.EventID,
-		partialEvent.CorrelationID,
-		partialEvent.OwnerUserID,
-		d.Body,
-	)
-
-	if err != nil {
-		log.Printf("[Notification Consumer] DB Error for Event %s: %v. Requeueing...", partialEvent.EventID, err)
-		d.Nack(false, true)
-	} else {
-		log.Printf("[Notification Consumer] Successfully processed Event %s", partialEvent.EventID)
+	switch d.RoutingKey {
+	case commands.SendNotificationType:
+		w.handleSendNotification(ctx, d)
+	case events.MeetupCreatedEventType:
+		w.handleMeetupCreated(ctx, d)
+	default:
+		log.Printf("[Notifications Consumer] Unknown event type: %s. Dropping.", d.RoutingKey)
 		d.Ack(false)
 	}
+}
+
+func (w *ConsumerWorker) checkInbox(ctx context.Context, tx *sql.Tx, id string) bool {
+	res, err := tx.ExecContext(ctx, `
+		INSERT INTO inbox_events (event_id) 
+		VALUES ($1) 
+		ON CONFLICT (event_id) DO NOTHING`,
+		id,
+	)
+	if err != nil {
+		log.Printf("[Notifications Consumer] Inbox DB Error: %v", err)
+		return false
+	}
+	count, _ := res.RowsAffected()
+	return count > 0
 }

@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"log"
 	"time"
@@ -77,4 +78,13 @@ func (r *PostgresRepo) GetByOwnerID(ctx context.Context, ownerUserID string) ([]
 	}
 
 	return domainNotifications, nil
+}
+
+func (r *PostgresRepo) SaveNotificationTx(ctx context.Context, tx *sql.Tx, eventID, correlationID, userID string, payload []byte) error {
+	query := `
+		INSERT INTO notifications (event_id, correlation_id, owner_user_id, payload)
+		VALUES ($1, $2, $3, $4)`
+
+	_, err := tx.ExecContext(ctx, query, eventID, correlationID, userID, payload)
+	return err
 }

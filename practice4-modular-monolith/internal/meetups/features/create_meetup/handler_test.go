@@ -8,8 +8,8 @@ import (
 
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/domain"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/events"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
-	"github.com/anechytailenko/Microservices_practice04/internal/shared/events"
 )
 
 type fakeRepo struct {

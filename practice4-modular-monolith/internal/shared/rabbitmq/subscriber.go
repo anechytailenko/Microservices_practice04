@@ -3,6 +3,7 @@ package rabbitmq
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -12,7 +13,7 @@ type Subscriber struct {
 	ch   *amqp.Channel
 }
 
-func NewSubscriber(url, exchangeName, queueName, routingKey string) (*Subscriber, <-chan amqp.Delivery, error) {
+func NewSubscriber(url, exchangeName, queueName string, bindingKeys []string, dlxName, dlqName, consumerName string) (*Subscriber, <-chan amqp.Delivery, error) {
 	conn, err := amqp.Dial(url)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to RabbitMQ: %w", err)
@@ -32,11 +33,7 @@ func NewSubscriber(url, exchangeName, queueName, routingKey string) (*Subscriber
 		}
 	}()
 
-	// set up deadletter exchange and queue
-	dlxName := "events.dlx"
-	dlqName := "notifications.dlq"
-
-	err = ch.ExchangeDeclare(dlxName, "fanout", true, false, false, false, nil)
+	err = ch.ExchangeDeclare(dlxName, "direct", true, false, false, false, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to declare DLX: %w", err)
 	}
@@ -46,40 +43,37 @@ func NewSubscriber(url, exchangeName, queueName, routingKey string) (*Subscriber
 		return nil, nil, fmt.Errorf("failed to declare DLQ: %w", err)
 	}
 
-	err = ch.QueueBind(dlqName, "", dlxName, false, nil)
+	// use dlq name as the routing to its queue
+	err = ch.QueueBind(dlqName, dlqName, dlxName, false, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to bind DLQ: %w", err)
 	}
 
-	// set up the topic  exchange (the same as in publisher) and bind the queue to it with message poisoning policy (5 retry -> deadletter exchange)
 	err = ch.ExchangeDeclare(exchangeName, "topic", true, false, false, false, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to declare main exchange: %w", err)
 	}
 
 	args := amqp.Table{
-		"x-queue-type":           "quorum",
-		"x-dead-letter-exchange": dlxName,
-		"x-delivery-limit":       int32(5),
+		"x-queue-type":              "quorum",
+		"x-dead-letter-exchange":    dlxName,
+		"x-dead-letter-routing-key": dlqName,
+		"x-delivery-limit":          int32(5),
 	}
 
-	q, err := ch.QueueDeclare(
-		queueName,
-		true,
-		false,
-		false,
-		false,
-		args,
-	)
+	q, err := ch.QueueDeclare(queueName, true, false, false, false, args)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to declare main queue: %w", err)
 	}
 
-	err = ch.QueueBind(q.Name, routingKey, exchangeName, false, nil)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to bind main queue: %w", err)
+	for _, key := range bindingKeys {
+		err = ch.QueueBind(q.Name, key, exchangeName, false, nil)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to bind main queue to key %s: %w", key, err)
+		}
 	}
-	// fair dispatch
+
+	// Fair dispatch
 	err = ch.Qos(1, 0, false)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to set QoS: %w", err)
@@ -87,7 +81,7 @@ func NewSubscriber(url, exchangeName, queueName, routingKey string) (*Subscriber
 
 	msgs, err := ch.Consume(
 		q.Name,
-		"notification_service",
+		consumerName,
 		false,
 		false,
 		false,
@@ -98,7 +92,8 @@ func NewSubscriber(url, exchangeName, queueName, routingKey string) (*Subscriber
 		return nil, nil, fmt.Errorf("failed to start consuming: %w", err)
 	}
 
-	log.Printf("[RabbitMQ] Subscribed to queue '%s' (binding: '%s')", queueName, routingKey)
+	keysLog := strings.Join(bindingKeys, ", ")
+	log.Printf("[RabbitMQ] Subscribed to queue '%s' (bindings: [%s])", queueName, keysLog)
 
 	success = true
 

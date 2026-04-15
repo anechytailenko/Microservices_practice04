@@ -35,18 +35,52 @@ func main() {
 		log.Fatal("RABBITMQ_URL is not set")
 	}
 
+	exchangeName := os.Getenv("DOMAIN_EXCHANGE")
+	if exchangeName == "" {
+		exchangeName = "domain.events"
+	}
+
+	queueName := os.Getenv("NOTIFICATIONS_QUEUE")
+	if queueName == "" {
+		queueName = "notifications.meetup_events"
+	}
+
+	dlxName := os.Getenv("EVENTS_DLX")
+	if dlxName == "" {
+		dlxName = "events.dlx"
+	}
+
+	dlqName := os.Getenv("NOTIFICATIONS_DLQ")
+	if dlqName == "" {
+		dlqName = "notifications.dlq"
+	}
+
+	consumerName := os.Getenv("CONSUMER_NAME")
+	if consumerName == "" {
+		consumerName = "notification_service"
+	}
+
 	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
+	bindingKeys := []string{
+		"commands.notifications.*",
+		"events.meetups.created",
+	}
+
 	subscriber, msgsChan, err := rabbitmq.NewSubscriber(
 		rabbitMQURL,
-		"domain.events",
-		"notifications.meetup_events",
-		"meetup.created",
+		exchangeName,
+		queueName,
+		bindingKeys,
+		dlxName,
+		dlqName,
+		consumerName,
 	)
+
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ subscriber: %v", err)
 	}
@@ -54,7 +88,7 @@ func main() {
 
 	repo := infrastructure.NewPostgresRepo(db)
 
-	worker := infrastructure.NewConsumerWorker(repo, msgsChan)
+	worker := infrastructure.NewConsumerWorker(db.DB, repo, msgsChan)
 	go worker.Start(context.Background())
 
 	mux := http.NewServeMux()

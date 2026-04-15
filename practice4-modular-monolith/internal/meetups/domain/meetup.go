@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"slices"
 	"time"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
@@ -11,6 +12,7 @@ type Meetup struct {
 	Title       string
 	Capacity    int
 	OwnerUserID string
+	Guests      []string
 	Status      MeetupStatus
 	CreatedAt   time.Time
 }
@@ -31,6 +33,7 @@ func NewMeetup(title string, capacity int, ownerUserID string) (*Meetup, error) 
 		Title:       title,
 		Capacity:    capacity,
 		OwnerUserID: ownerUserID,
+		Guests:      make([]string, 0),
 		Status:      StatusDraft,
 		CreatedAt:   time.Now().UTC(),
 	}, nil
@@ -52,4 +55,28 @@ func (m *Meetup) ChangeStatus(newStatus MeetupStatus) error {
 
 	m.Status = newStatus
 	return nil
+}
+
+func (m *Meetup) AddGuest(userID string) error {
+	// domain idempotency
+	if slices.Contains(m.Guests, userID) {
+		return nil
+	}
+
+	if len(m.Guests) >= m.Capacity {
+		return shared.NewConflictError("meetup is fully booked")
+	}
+
+	m.Guests = append(m.Guests, userID)
+	return nil
+}
+
+func (m *Meetup) RemoveGuest(userID string) {
+	// domain idempotency
+	idx := slices.Index(m.Guests, userID)
+	if idx == -1 {
+		return
+	}
+
+	m.Guests = slices.Delete(m.Guests, idx, idx+1)
 }

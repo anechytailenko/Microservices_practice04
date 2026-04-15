@@ -2,6 +2,7 @@ package domain
 
 import (
 	"net/mail"
+	"slices"
 	"strings"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
@@ -12,6 +13,7 @@ type User struct {
 	FirstName string
 	LastName  string
 	Email     string
+	Meetups   []string
 }
 
 func NewUser(firstName, lastName, email string) (*User, error) {
@@ -41,9 +43,25 @@ func NewUser(firstName, lastName, email string) (*User, error) {
 		FirstName: firstName,
 		LastName:  lastName,
 		Email:     email,
+		Meetups:   make([]string, 0),
 	}, nil
 }
 
 func (u *User) DisplayName() string {
 	return u.FirstName + " " + u.LastName
+}
+
+func (u *User) AddMeetup(meetupID string) {
+	if slices.Contains(u.Meetups, meetupID) {
+		return
+	}
+	u.Meetups = append(u.Meetups, meetupID)
+}
+
+func (u *User) RemoveMeetup(meetupID string) {
+	idx := slices.Index(u.Meetups, meetupID)
+	if idx == -1 {
+		return
+	}
+	u.Meetups = slices.Delete(u.Meetups, idx, idx+1)
 }

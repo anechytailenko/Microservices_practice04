@@ -44,6 +44,12 @@ func TestNewMeetup(t *testing.T) {
 				if m.OwnerUserID != tt.ownerUserID {
 					t.Errorf("expected owner ID %q, got %q", tt.ownerUserID, m.OwnerUserID)
 				}
+				if m.Guests == nil {
+					t.Errorf("expected guests slice to be initialized, got nil")
+				}
+				if len(m.Guests) != 0 {
+					t.Errorf("expected guests slice to be empty, got length %d", len(m.Guests))
+				}
 			}
 		})
 	}

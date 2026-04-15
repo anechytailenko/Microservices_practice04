@@ -27,6 +27,11 @@ func main() {
 		log.Fatal("NOTIFICATION_SERVICE_URL is not set")
 	}
 
+	workflowURL := os.Getenv("WORKFLOW_SERVICE_URL")
+	if workflowURL == "" {
+		log.Fatal("WORKFLOW_SERVICE_URL is not set")
+	}
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -47,6 +52,11 @@ func main() {
 		log.Fatalf("Failed to create notifications proxy: %v", err)
 	}
 
+	workflowProxy, err := reverseproxy.NewProxy(workflowURL)
+	if err != nil {
+		log.Fatalf("Failed to create workflow proxy: %v", err)
+	}
+
 	mux := http.NewServeMux()
 
 	web.RegisterHealthRoutes(mux, nil, "gateway", CommitHash)
@@ -58,6 +68,8 @@ func main() {
 	mux.Handle("/meetups/", http.StripPrefix("/meetups", meetupsProxy))
 
 	mux.Handle("/notifications/", http.StripPrefix("/notifications", notificationsProxy))
+
+	mux.Handle("/workflows/", http.StripPrefix("/workflows", workflowProxy))
 
 	finalHandler := reverseproxy.CorrelationID(mux)
 

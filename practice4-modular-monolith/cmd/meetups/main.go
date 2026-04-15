@@ -43,20 +43,64 @@ func main() {
 		log.Fatal("RABBITMQ_URL is not set")
 	}
 
+	exchangeName := os.Getenv("DOMAIN_EXCHANGE")
+	if exchangeName == "" {
+		exchangeName = "domain.events"
+	}
+
+	queueName := os.Getenv("MEETUPS_QUEUE")
+	if queueName == "" {
+		queueName = "meetups.workflow_commands"
+	}
+
+	dlxName := os.Getenv("EVENTS_DLX")
+	if dlxName == "" {
+		dlxName = "events.dlx"
+	}
+
+	dlqName := os.Getenv("MEETUPS_DLQ")
+	if dlqName == "" {
+		dlqName = "meetups.dlq"
+	}
+
+	consumerName := os.Getenv("CONSUMER_NAME")
+	if consumerName == "" {
+		consumerName = "meetups_service"
+	}
+
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatalf("Failed to open database: %v", err)
 	}
 	defer db.Close()
 
-	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, "domain.events")
+	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ publisher: %v", err)
 	}
 	defer publisher.Close()
 
+	bindingKeys := []string{"commands.meetups.*"}
+
+	subscriber, msgsChan, err := rabbitmq.NewSubscriber(
+		rabbitMQURL,
+		exchangeName,
+		queueName,
+		bindingKeys,
+		dlxName,
+		dlqName,
+		consumerName,
+	)
+	if err != nil {
+		log.Fatalf("Failed to initialize RabbitMQ subscriber: %v", err)
+	}
+	defer subscriber.Close()
+
 	outboxWorker := infrastructure.NewOutboxWorker(db, publisher)
 	go outboxWorker.Start(context.Background(), 2*time.Second)
+
+	consumerWorker := infrastructure.NewConsumerWorker(db, msgsChan)
+	go consumerWorker.Start(context.Background())
 
 	repo := infrastructure.NewPostgresRepo(db)
 	usersClient := infrastructure.NewUsersClient(usersServiceURL)
@@ -70,7 +114,7 @@ func main() {
 	shared.RegisterHealthRoutes(mux, db, "meetups", CommitHash)
 	meetups_api.RegisterRoutes(mux, createHandler, changeStatusHandler, getMeetupHandler)
 
-	log.Printf("Starting server on port %s...", port)
+	log.Printf("Starting Meetups Service on port %s...", port)
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
 		log.Fatalf("Server failed: %v", err)
 	}

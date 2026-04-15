@@ -7,6 +7,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const MeetupCreatedEventType = "events.meetups.created"
+
 type MeetupCreatedEvent struct {
 	EventID       string    `json:"eventId"`
 	OccurredAt    time.Time `json:"occurredAt"`

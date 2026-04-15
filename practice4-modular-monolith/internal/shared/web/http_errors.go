@@ -20,6 +20,8 @@ func HandleError(w http.ResponseWriter, err error) {
 			http.Error(w, sharedErr.Message, http.StatusNotFound)
 		case shared.ErrorTypeServiceUnavailable:
 			http.Error(w, sharedErr.Message, http.StatusServiceUnavailable)
+		case shared.ErrorTypeInternal:
+			http.Error(w, sharedErr.Message, http.StatusInternalServerError)
 		default:
 			http.Error(w, sharedErr.Message, http.StatusBadRequest)
 		}

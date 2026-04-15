@@ -37,6 +37,7 @@ func (h *Handler) Handle(ctx context.Context, q Query) (*UserDTO, error) {
 		LastName:    user.LastName,
 		Email:       user.Email,
 		DisplayName: user.DisplayName(),
+		Meetups:     user.Meetups,
 	}
 
 	return dto, nil

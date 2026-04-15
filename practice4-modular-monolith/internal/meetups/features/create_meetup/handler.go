@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/domain"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/events"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
-	"github.com/anechytailenko/Microservices_practice04/internal/shared/events"
 )
 
 type Repository interface {
@@ -56,7 +56,7 @@ func (h *Handler) Handle(ctx context.Context, cmd Command) (domain.MeetupID, err
 		return "", fmt.Errorf("failed to marshal outbox event: %w", err)
 	}
 
-	if err := h.repo.Save(ctx, meetup, evt.EventID, "meetup.created", payloadBytes); err != nil {
+	if err := h.repo.Save(ctx, meetup, evt.EventID, events.MeetupCreatedEventType, payloadBytes); err != nil {
 		return "", err
 	}
 

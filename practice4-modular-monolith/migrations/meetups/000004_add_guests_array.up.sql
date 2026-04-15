@@ -1,0 +1,1 @@
+ALTER TABLE meetups ADD COLUMN guests VARCHAR(36)[] DEFAULT '{}';

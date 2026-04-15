@@ -3,6 +3,7 @@ package get_meetup
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
@@ -36,7 +37,8 @@ func TestHandler_Handle(t *testing.T) {
 		ID:          meetupID,
 		Title:       "Read API Architecture",
 		Capacity:    200,
-		OwnerUserID: "user-123",
+		OwnerUserID: "organizer-999",
+		Guests:      []string{"user-1", "user-2"},
 		Status:      domain.StatusPublished,
 		CreatedAt:   now,
 	}
@@ -99,6 +101,9 @@ func TestHandler_Handle(t *testing.T) {
 				}
 				if dto.OwnerUserID != initialMeetup.OwnerUserID {
 					t.Errorf("expected OwnerUserID %q, got %q", initialMeetup.OwnerUserID, dto.OwnerUserID)
+				}
+				if !reflect.DeepEqual(dto.Guests, initialMeetup.Guests) {
+					t.Errorf("expected Guests %v, got %v", initialMeetup.Guests, dto.Guests)
 				}
 				if dto.Status != string(initialMeetup.Status) {
 					t.Errorf("expected Status %q, got %q", initialMeetup.Status, dto.Status)

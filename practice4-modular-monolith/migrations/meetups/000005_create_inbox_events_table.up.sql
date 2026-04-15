@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS inbox_events (
+    event_id VARCHAR(36) PRIMARY KEY,
+    processed_at TIMESTAMP
+    WITH
+        TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

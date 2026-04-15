@@ -58,6 +58,12 @@ func TestNewUser(t *testing.T) {
 				if u.ID == "" {
 					t.Errorf("expected user ID to be generated, got empty string")
 				}
+				if u.Meetups == nil {
+					t.Errorf("expected meetups slice to be initialized, got nil")
+				}
+				if len(u.Meetups) != 0 {
+					t.Errorf("expected meetups slice to be empty, got length %d", len(u.Meetups))
+				}
 			}
 		})
 	}
@@ -74,5 +80,49 @@ func TestUser_DisplayName(t *testing.T) {
 
 	if actual != expected {
 		t.Errorf("expected DisplayName %q, got %q", expected, actual)
+	}
+}
+
+func TestUser_AddMeetup(t *testing.T) {
+	u := &User{
+		Meetups: make([]string, 0),
+	}
+
+	meetupID := "meetup-123"
+
+	u.AddMeetup(meetupID)
+	if len(u.Meetups) != 1 || u.Meetups[0] != meetupID {
+		t.Errorf("expected meetup %q to be added, got %v", meetupID, u.Meetups)
+	}
+
+	u.AddMeetup(meetupID)
+	if len(u.Meetups) != 1 {
+		t.Errorf("expected idempotency to prevent duplicates, expected length 1, got %d", len(u.Meetups))
+	}
+
+	u.AddMeetup("meetup-456")
+	if len(u.Meetups) != 2 {
+		t.Errorf("expected length 2 after adding a different meetup, got %d", len(u.Meetups))
+	}
+}
+
+func TestUser_RemoveMeetup(t *testing.T) {
+	u := &User{
+		Meetups: []string{"meetup-123", "meetup-456"},
+	}
+
+	u.RemoveMeetup("meetup-123")
+	if len(u.Meetups) != 1 || u.Meetups[0] != "meetup-456" {
+		t.Errorf("expected 'meetup-456' to remain, got %v", u.Meetups)
+	}
+
+	u.RemoveMeetup("meetup-999")
+	if len(u.Meetups) != 1 {
+		t.Errorf("expected idempotency to handle non-existent meetups, expected length 1, got %d", len(u.Meetups))
+	}
+
+	u.RemoveMeetup("meetup-456")
+	if len(u.Meetups) != 0 {
+		t.Errorf("expected meetups to be empty, got length %d", len(u.Meetups))
 	}
 }

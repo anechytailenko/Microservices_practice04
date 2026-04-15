@@ -3,6 +3,7 @@ package get_user
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
@@ -36,6 +37,7 @@ func TestHandler_Handle(t *testing.T) {
 		FirstName: "Alex",
 		LastName:  "Johnson",
 		Email:     "alex.j@example.com",
+		Meetups:   []string{"meetup-1", "meetup-2"},
 	}
 
 	tests := []struct {
@@ -99,6 +101,9 @@ func TestHandler_Handle(t *testing.T) {
 				}
 				if dto.DisplayName != initialUser.DisplayName() {
 					t.Errorf("expected DisplayName %q, got %q", initialUser.DisplayName(), dto.DisplayName)
+				}
+				if !reflect.DeepEqual(dto.Meetups, initialUser.Meetups) {
+					t.Errorf("expected Meetups %v, got %v", initialUser.Meetups, dto.Meetups)
 				}
 
 			} else {
