@@ -28,24 +28,9 @@ func HandleError(w http.ResponseWriter, err error) {
 		case shared.ErrorTypeNotFound:
 			status = http.StatusNotFound
 		case shared.ErrorTypeServiceUnavailable:
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-			http.Error(w, sharedErr.Message, http.StatusServiceUnavailable)
-<<<<<<< Updated upstream
-		case shared.ErrorTypeInternal:
-			http.Error(w, sharedErr.Message, http.StatusInternalServerError)
-=======
-=======
 			status = http.StatusServiceUnavailable
 		case shared.ErrorTypeInternal:
 			status = http.StatusInternalServerError
->>>>>>> Stashed changes
-=======
-			status = http.StatusServiceUnavailable
-		case shared.ErrorTypeInternal:
-			status = http.StatusInternalServerError
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 		default:
 			status = http.StatusBadRequest
 		}

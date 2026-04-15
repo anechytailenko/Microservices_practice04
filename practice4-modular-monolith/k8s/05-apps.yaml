@@ -31,7 +31,7 @@ spec:
       containers:
         - name: app
           image: anna13nechytailenko/saga-users:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
@@ -75,7 +75,7 @@ spec:
       containers:
         - name: app
           image: anna13nechytailenko/saga-meetups:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
@@ -119,7 +119,7 @@ spec:
       containers:
         - name: app
           image: anna13nechytailenko/saga-notifications:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
@@ -163,7 +163,7 @@ spec:
       containers:
         - name: app
           image: anna13nechytailenko/saga-workflow:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:
@@ -209,7 +209,7 @@ spec:
       containers:
         - name: app
           image: anna13nechytailenko/saga-gateway:v1.1
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           env:

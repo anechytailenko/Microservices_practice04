@@ -51,26 +51,13 @@ func TestWorkflow_ChangeState(t *testing.T) {
 		expectError bool
 	}{
 		{"Initializing -> SeatReserved", StateInitializing, StateSeatReserved, false},
-<<<<<<< Updated upstream
-		{"SeatReserved -> ScheduleUpdated", StateSeatReserved, StateScheduleUpdated, false},
-		{"ScheduleUpdated -> Completed", StateScheduleUpdated, StateCompleted, false},
-
-		{"SeatReserved -> CancelingSeat", StateSeatReserved, StateCancelingSeat, false},
-		{"CancelingSeat -> Failed", StateCancelingSeat, StateFailed, false},
-		{"CancelingSeat -> ManualIntervention", StateCancelingSeat, StateManualIntervention, false},
-=======
 		{"SeatReserved -> Completed", StateSeatReserved, StateCompleted, false},
 		{"SeatReserved -> CancelingSeat", StateSeatReserved, StateCancelingSeat, false},
 		{"CancelingSeat -> Failed", StateCancelingSeat, StateFailed, false},
->>>>>>> Stashed changes
 
 		{"Initializing -> Completed (Skip steps)", StateInitializing, StateCompleted, true},
 		{"Completed -> Failed (Modify terminal)", StateCompleted, StateFailed, true},
 		{"Failed -> Initializing (Restart from terminal)", StateFailed, StateInitializing, true},
-<<<<<<< Updated upstream
-		{"ScheduleUpdated -> CancelingSeat (Too late to cancel)", StateScheduleUpdated, StateCancelingSeat, true},
-=======
->>>>>>> Stashed changes
 	}
 
 	for _, tt := range tests {
@@ -96,30 +83,3 @@ func TestWorkflow_ChangeState(t *testing.T) {
 		})
 	}
 }
-<<<<<<< Updated upstream
-
-func TestWorkflow_MarkAsFailed(t *testing.T) {
-	w := &Workflow{
-		State: StateSeatReserved,
-	}
-	reason := "User has a schedule conflict"
-
-	err := w.MarkAsFailed(StateCancelingSeat, reason)
-
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if w.State != StateCancelingSeat {
-		t.Errorf("expected state %q, got %q", StateCancelingSeat, w.State)
-	}
-	if w.LastError == nil || *w.LastError != reason {
-		t.Errorf("expected last error to be %q", reason)
-	}
-
-	err = w.MarkAsFailed(StateFailed, "another error")
-	if err == nil {
-		t.Errorf("expected error when failing from non-allowed transition")
-	}
-}
-=======
->>>>>>> Stashed changes
