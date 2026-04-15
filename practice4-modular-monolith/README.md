@@ -159,6 +159,28 @@ docker-compose up
 ```
 
 ```bash
+curl -i -X POST http://localhost:8080/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "first_name": "Anna",
+           "last_name": "Nechytailenko",
+           "email": "anna.test@example.com"
+         }'
+```
+
+```bash
+curl -i -X POST http://localhost:8080/meetups \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Golang Microservices Workshop",
+           "capacity": 50,
+           "owner_user_id": "<USER_ID>"
+         }'
+```
+
+After meetup created user will have notificatoin that was delivered through http client: 
+
+```bash
 curl -i -X GET http://localhost:8080/notifications/<USER_ID>
 ```
 
@@ -210,12 +232,13 @@ curl -i -X GET http://localhost:8080/notifications/health/ready
 ```bash
 curl -i -X GET http://localhost:8080/workflows/health/live
 ```
+
 ```bash
 curl -i -X GET http://localhost:8080/workflows/health/ready
 ``
 
 
-087a3f4e-b324-43bf-b412-65c84dae680c
+
 ```bash
 curl -i -X POST http://localhost:8080/meetups \
      -H "Content-Type: application/json" \
@@ -226,20 +249,8 @@ curl -i -X POST http://localhost:8080/meetups \
          }'
 ```
 
-curl -i -X POST http://localhost:8080/meetups \
-     -H "Content-Type: application/json" \
-     -d '{
-           "title": "Go Kubernetes Workshop",
-           "capacity": 100,
-           "owner_user_id": "3241e8ff-3caf-4eca-be20-08ff6048e30c"
-         }'
-
-
-
-
-
 ```bash
-curl -X GET http://localhost:8080/meetups/c3947ae5-fc39-46b6-bb95-e15c47b6a279
+curl -X GET http://localhost:8080/meetups/<MEETUP_ID>
 ```
 
 ```bash
@@ -248,9 +259,6 @@ curl -X PATCH http://localhost:8080/meetups/<MEETUP_ID>/status \
      -d '{"status": "<STATUS>"}'
 ```
 
-
-
-342d5af2-6374-4193-9c2c-bbc7ae213729
 ```bash
 curl -i -X POST http://localhost:8080/users \
      -H "Content-Type: application/json" \
@@ -262,26 +270,76 @@ curl -i -X POST http://localhost:8080/users \
 ```
 
 ```bash
-curl -X GET http://localhost:8080/users/031b81e8-9189-445d-b9c5-9fde686f81bc
+curl -X GET http://localhost:8080/users/<USER_ID>
 ```
-
-
-
 
 
 ```bash
-curl -X GET http://localhost:8080/notifications/031b81e8-9189-445d-b9c5-9fde686f81bc
+curl -X GET http://localhost:8080/notifications/<USER_ID>
 ```
-
 
 ```bash
 curl -X POST http://localhost:8080/workflows/join-meetup \
      -H "Content-Type: application/json" \
-     -d '{"userId": "<USER_ID>", "meetupId": "<MEETUP_ID>"}'
+     -d '{"userId": "<USER_ID>", "meetupId": "<MEETUP_ID"}'
 ```
 
 
 ```bash
-curl -X GET http://localhost:8080/workflows/<WORKFLOW_ID>
+curl -X GET http://localhost:8080/workflows/<USER_ID>
 ```
+
+**To see compensation:**
+- 1 stage compensation : not existed meetupId
+- 2 stage compensation : not existed userId
+
+### Saga Orchestration Service Demonstration Report
+
+This report documents the successful demonstration of the **Saga Orchestration Service** for the `join-meetup` workflow. The demo validates the system's ability to handle distributed transactions, trigger compensations when a stage fails, and complete the full flow under correct conditions.
+
+---
+
+#### 1. System Readiness & Health Check
+Before initiating the orchestration tests, a full cluster health check was performed via the Gateway. All microservices and their respective databases were confirmed as **UP**.
+
+* **Gateway:** `HTTP 200` (Database skipped)
+* **Users Service:** `HTTP 200` (Database OK)
+* **Meetups Service:** `HTTP 200` (Database OK)
+* **Notifications Service:** `HTTP 200` (Database OK)
+* **Workflow Service:** `HTTP 200` (Database OK)
+
+---
+
+### 2. Orchestration Test Scenarios
+
+#### **Scenario A: Stage 1 Compensation (Meetup Validation Failure)**
+In this stage, the orchestrator attempts to reserve a seat, but the Meetup service cannot find the requested ID.
+* **Action:** POST to `/workflows/join-meetup` with a non-existent `meetupId`.
+* **Result:** The Saga state transitioned to `Failed`.
+* **Compensation Logic:** The system successfully captured the error: `"meetup with id '01688...65' not found"`. Since the first step failed, the transaction was safely aborted before affecting other services.
+* **Correlation ID:** `039b51dc-e51f-43e3-9593-92a21df9fca5`
+
+#### **Scenario B: Stage 2 Compensation (User Validation Failure)**
+In this stage, the Meetup is valid, but the User service fails to validate the participant.
+* **Action:** POST to `/workflows/join-meetup` with an invalid `userId`.
+* **Result:** The Saga state transitioned to `Failed`.
+* **Compensation Logic:** The orchestrator received a failure from the User stage: `"User 3bfa4...28 does not exist"`.
+* **Automatic Rollback:** The system successfully triggered compensation to ensure no "ghost" reservations remained in the Meetup service despite the user error.
+
+#### **Scenario C: Successful Orchestration (Happy Path)**
+The final test confirms that the orchestrator can coordinate all services when data is valid.
+* **Action:** POST to `/workflows/join-meetup` with valid `userId` and `meetupId`.
+* **Result:** The Saga state successfully transitioned from `Initializing` to **`Completed`**.
+* **Timeline:** The entire distributed transaction (Validation -> Reservation -> Notification) was finalized within ~3 seconds.
+* **Verification:** Final GET request confirmed the state: `{"state":"Completed"}`.
+
+---
+
+#### 3. Summary of Results
+
+| Scenario | Target State | Actual State | Error Captured |
+| :--- | :--- | :--- | :--- |
+| **Invalid Meetup** | Failed | **Failed** | Meetup not found |
+| **Invalid User** | Failed | **Failed** | User does not exist |
+| **Valid Data** | Completed | **Completed** | None |
 

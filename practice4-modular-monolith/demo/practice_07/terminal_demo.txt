@@ -1,0 +1,105 @@
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X GET http://localhost:8080/health/ready
+HTTP/1.1 200 OK
+Content-Type: application/json
+X-Correlation-Id: 039b51dc-e51f-43e3-9593-92a21df9fca5
+Date: Thu, 16 Apr 2026 09:18:15 GMT
+Content-Length: 110
+
+{"status":"UP","service":"gateway","commit":"359d23a","checks":{"database":"skipped (no database attached)"}}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X GET http://localhost:8080/users/health/ready
+HTTP/1.1 200 OK
+Content-Length: 80
+Content-Type: application/json
+Date: Thu, 16 Apr 2026 09:18:20 GMT
+X-Correlation-Id: 5a83c04e-2eb4-43fb-8b48-449673883459
+
+{"status":"UP","service":"users","commit":"359d23a","checks":{"database":"OK"}}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X GET http://localhost:8080/meetups/health/ready
+HTTP/1.1 200 OK
+Content-Length: 82
+Content-Type: application/json
+Date: Thu, 16 Apr 2026 09:18:28 GMT
+X-Correlation-Id: 018b36ab-d37b-43b7-98a7-7d4a61c699e8
+
+{"status":"UP","service":"meetups","commit":"359d23a","checks":{"database":"OK"}}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X GET http://localhost:8080/notifications/health/ready
+HTTP/1.1 200 OK
+Content-Length: 88
+Content-Type: application/json
+Date: Thu, 16 Apr 2026 09:18:44 GMT
+X-Correlation-Id: 934c3c11-041c-479d-afb5-4e2a35570e40
+
+{"status":"UP","service":"notifications","commit":"359d23a","checks":{"database":"OK"}}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X GET http://localhost:8080/workflows/health/ready
+HTTP/1.1 200 OK
+Content-Length: 83
+Content-Type: application/json
+Date: Thu, 16 Apr 2026 09:18:50 GMT
+X-Correlation-Id: 894af29e-4314-452c-bc1c-e0ae8bfe7a9f
+
+{"status":"UP","service":"workflow","commit":"359d23a","checks":{"database":"OK"}}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X POST http://localhost:8080/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "first_name": "John",
+           "last_name": "Doe",
+           "email": "john.doe@example.com"
+         }'
+HTTP/1.1 201 Created
+Content-Length: 46
+Content-Type: application/json
+Date: Thu, 16 Apr 2026 09:19:00 GMT
+X-Correlation-Id: f902be50-e85b-42e3-8644-4584c2427037
+
+{"id":"d5ac877d-0028-4263-88ca-eb61f7186b11"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X POST http://localhost:8080/meetups \
+     -H "Content-Type: application/json" \
+     -d '{
+           "title": "Go Kubernetes Workshop",
+           "capacity": 100,
+           "owner_user_id": "d5ac877d-0028-4263-88ca-eb61f7186b11"
+         }'
+HTTP/1.1 201 Created
+Content-Length: 46
+Content-Type: application/json
+Date: Thu, 16 Apr 2026 09:19:11 GMT
+X-Correlation-Id: fb9ca44c-2b76-4a40-b7ab-5e7488accffe
+
+{"id":"b973522f-25c4-4b27-9291-6b6549355563"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -i -X POST http://localhost:8080/users \
+     -H "Content-Type: application/json" \
+     -d '{
+           "first_name": "John",
+           "last_name": "Doe",
+           "email": "notjohn.doe@example.com"
+         }'
+HTTP/1.1 201 Created
+Content-Length: 46
+Content-Type: application/json
+Date: Thu, 16 Apr 2026 09:19:30 GMT
+X-Correlation-Id: ddffe8aa-39f5-4089-ab82-752a260f76d2
+
+{"id":"3bfa49a8-b4ad-40fd-8ad8-33341c754927"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -X POST http://localhost:8080/workflows/join-meetup \
+     -H "Content-Type: application/json" \
+     -d '{"userId": "3bfa49a8-b4ad-40fd-8ad8-33341c754927", "meetupId": "016889b1-73d7-44f3-b205-5a01e50ae165"}'
+{"id":"67e0b959-5208-4c87-8c48-76502c0e047d","type":"join-meetup","state":"Initializing","created_at":"2026-04-16T09:19:44.327070461Z"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -X GET http://localhost:8080/workflows/67e0b959-5208-4c87-8c48-76502c0e047d
+{"id":"67e0b959-5208-4c87-8c48-76502c0e047d","type":"join-meetup","state":"Failed","last_error":"meetup with id '016889b1-73d7-44f3-b205-5a01e50ae165' not found","created_at":"2026-04-16T09:19:44.32707Z","updated_at":"2026-04-16T09:19:47.117899Z"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -X POST http://localhost:8080/workflows/join-meetup \
+     -H "Content-Type: application/json" \
+     -d '{"userId": "3bfa49a8-b4ad-40fd-8ad8-33341c754928", "meetupId": "b973522f-25c4-4b27-9291-6b6549355563}'
+invalid json body
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -X POST http://localhost:8080/workflows/join-meetup \
+     -H "Content-Type: application/json" \
+     -d '{"userId": "3bfa49a8-b4ad-40fd-8ad8-33341c754928", "meetupId": "b973522f-25c4-4b27-9291-6b6549355563"}'
+{"id":"9ea098f7-0422-4a25-be3c-1e563ebf014d","type":"join-meetup","state":"Initializing","created_at":"2026-04-16T09:21:07.43517143Z"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -X GET http://localhost:8080/workflows/9ea098f7-0422-4a25-be3c-1e563ebf014d
+{"id":"9ea098f7-0422-4a25-be3c-1e563ebf014d","type":"join-meetup","state":"Failed","last_error":"User 3bfa49a8-b4ad-40fd-8ad8-33341c754928 does not exist","created_at":"2026-04-16T09:21:07.435171Z","updated_at":"2026-04-16T09:21:13.117272Z"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -X POST http://localhost:8080/workflows/join-meetup \
+     -H "Content-Type: application/json" \
+     -d '{"userId": "3bfa49a8-b4ad-40fd-8ad8-33341c754927", "meetupId": "b973522f-25c4-4b27-9291-6b6549355563"}'
+{"id":"24f0303f-c939-469f-ab0c-734b2c00f463","type":"join-meetup","state":"Initializing","created_at":"2026-04-16T09:21:29.75268401Z"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % curl -X GET http://localhost:8080/workflows/24f0303f-c939-469f-ab0c-734b2c00f463
+{"id":"24f0303f-c939-469f-ab0c-734b2c00f463","type":"join-meetup","state":"Completed","created_at":"2026-04-16T09:21:29.752684Z","updated_at":"2026-04-16T09:21:32.766556Z"}
+annanechytailenko@Annas-MacBook-Pro-2 practice04 % 

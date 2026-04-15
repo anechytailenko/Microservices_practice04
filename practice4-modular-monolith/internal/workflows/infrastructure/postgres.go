@@ -28,11 +28,7 @@ func (r *PostgresRepo) Save(ctx context.Context, workflow *domain.Workflow, even
 	defer tx.Rollback()
 
 	queryWorkflow := `
-<<<<<<< Updated upstream
-        INSERT INTO workflow_instances (workflow_id, type, state, last_error, created_at, updated_at)
-=======
         INSERT INTO workflows (workflow_id, type, state, last_error, created_at, updated_at)
->>>>>>> Stashed changes
         VALUES ($1, $2, $3, $4, $5, $6)`
 
 	_, err = tx.ExecContext(ctx, queryWorkflow,
@@ -67,11 +63,7 @@ func (r *PostgresRepo) Save(ctx context.Context, workflow *domain.Workflow, even
 func (r *PostgresRepo) GetByIDTx(ctx context.Context, tx *sql.Tx, id domain.WorkflowID) (*domain.Workflow, error) {
 	query := `
         SELECT workflow_id, type, state, last_error, created_at, updated_at 
-<<<<<<< Updated upstream
-        FROM workflow_instances 
-=======
         FROM workflows 
->>>>>>> Stashed changes
         WHERE workflow_id = $1 
         FOR UPDATE`
 
@@ -105,11 +97,7 @@ func (r *PostgresRepo) GetByIDTx(ctx context.Context, tx *sql.Tx, id domain.Work
 
 func (r *PostgresRepo) UpdateTx(ctx context.Context, tx *sql.Tx, w *domain.Workflow) error {
 	query := `
-<<<<<<< Updated upstream
-        UPDATE workflow_instances 
-=======
         UPDATE workflows 
->>>>>>> Stashed changes
         SET state = $1, last_error = $2, updated_at = $3 
         WHERE workflow_id = $4`
 
@@ -127,11 +115,7 @@ func (r *PostgresRepo) SaveOutboxEventTx(ctx context.Context, tx *sql.Tx, eventT
 func (r *PostgresRepo) GetStuckWorkflows(ctx context.Context, timeout time.Duration) ([]string, error) {
 	query := `
         SELECT workflow_id 
-<<<<<<< Updated upstream
-        FROM workflow_instances 
-=======
         FROM workflows 
->>>>>>> Stashed changes
         WHERE state NOT IN ('Completed', 'Failed', 'ManualIntervention') 
         AND updated_at < NOW() - $1::interval`
 
@@ -156,11 +140,7 @@ func (r *PostgresRepo) GetStuckWorkflows(ctx context.Context, timeout time.Durat
 
 func (r *PostgresRepo) MarkAsTimedOut(ctx context.Context, workflowID string) error {
 	query := `
-<<<<<<< Updated upstream
-        UPDATE workflow_instances 
-=======
         UPDATE workflows 
->>>>>>> Stashed changes
         SET state = 'ManualIntervention', last_error = 'Saga timed out', updated_at = NOW() 
         WHERE workflow_id = $1 
         AND state NOT IN ('Completed', 'Failed', 'ManualIntervention')`
@@ -172,11 +152,7 @@ func (r *PostgresRepo) MarkAsTimedOut(ctx context.Context, workflowID string) er
 func (r *PostgresRepo) GetByID(ctx context.Context, id domain.WorkflowID) (*domain.Workflow, error) {
 	query := `
         SELECT workflow_id, type, state, last_error, created_at, updated_at 
-<<<<<<< Updated upstream
-        FROM workflow_instances 
-=======
         FROM workflows 
->>>>>>> Stashed changes
         WHERE workflow_id = $1`
 
 	var w domain.Workflow

@@ -1,10 +1,6 @@
 package events
 
-<<<<<<< Updated upstream
-const ScheduleUpdateFailedEventType = "users.schedule.update_failed"
-=======
 const ScheduleUpdateFailedEventType = "events.users.schedule.update_failed"
->>>>>>> Stashed changes
 
 type ScheduleUpdateFailed struct {
 	WorkflowID    string `json:"workflowId"`

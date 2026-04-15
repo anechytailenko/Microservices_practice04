@@ -79,15 +79,6 @@ func main() {
 	}
 	defer db.Close()
 
-<<<<<<< Updated upstream
-	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, "domain.events")
-=======
-=======
->>>>>>> Stashed changes
 	// proccess of migration that will run as the seperate Job in kubernetes
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
 		log.Println("Starting  migration process for meetups...")
@@ -100,23 +91,13 @@ func main() {
 	}
 
 	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
->>>>>>> Stashed changes
->>>>>>> Stashed changes
+
 	if err != nil {
 		log.Fatalf("Failed to initialize RabbitMQ publisher: %v", err)
 	}
 	defer publisher.Close()
 
-<<<<<<< Updated upstream
-	bindingKeys := []string{"commands.meetups.*"}
-=======
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
-=======
->>>>>>> Stashed changes
 	bindingKeys := []string{"commands.meetups.#"}
->>>>>>> Stashed changes
 
 	subscriber, msgsChan, err := rabbitmq.NewSubscriber(
 		rabbitMQURL,
@@ -132,10 +113,6 @@ func main() {
 	}
 	defer subscriber.Close()
 
-<<<<<<< Updated upstream
-=======
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 	outboxWorker := infrastructure.NewOutboxWorker(db, publisher)
 	go outboxWorker.Start(context.Background(), 2*time.Second)
 
