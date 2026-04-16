@@ -8,6 +8,8 @@ import (
 
 type correlationKey struct{}
 
+const CorrelationIDHeader = "X-Correlation-Id"
+
 func WithCorrelationID(ctx context.Context, id string) context.Context {
 	return context.WithValue(ctx, correlationKey{}, id)
 }

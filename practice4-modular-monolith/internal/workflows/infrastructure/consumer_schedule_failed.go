@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/commands"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/events"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	"github.com/anechytailenko/Microservices_practice04/internal/workflows/domain"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -92,6 +92,6 @@ func (w *ConsumerWorker) handleScheduleUpdateFailed(ctx context.Context, d amqp.
 		return
 	}
 
-	log.Printf("[Workflow] Saga %s: Schedule failed (%s). Triggering CancelSeatReservation.", evt.WorkflowID, evt.Reason)
+	logger.Printf(ctx, "[Workflow] Saga %s: Schedule failed (%s). Triggering CancelSeatReservation.", evt.WorkflowID, evt.Reason)
 	d.Ack(false)
 }

@@ -1,10 +1,11 @@
 package rabbitmq
 
 import (
+	"context"
 	"fmt"
-	"log"
 	"strings"
 
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -92,8 +93,7 @@ func NewSubscriber(url, exchangeName, queueName string, bindingKeys []string, dl
 		return nil, nil, fmt.Errorf("failed to start consuming: %w", err)
 	}
 
-	keysLog := strings.Join(bindingKeys, ", ")
-	log.Printf("[RabbitMQ] Subscribed to queue '%s' (bindings: [%s])", queueName, keysLog)
+	logger.Printf(context.Background(), "[RabbitMQ] Subscribed to queue '%s' (bindings: [%s])", queueName, strings.Join(bindingKeys, ", "))
 
 	success = true
 

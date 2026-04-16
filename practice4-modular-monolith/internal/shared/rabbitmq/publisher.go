@@ -3,9 +3,10 @@ package rabbitmq
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -51,7 +52,7 @@ func NewPublisher(url string, exchangeName string) (*Publisher, error) {
 		return nil, fmt.Errorf("failed to declare exchange: %w", err)
 	}
 
-	log.Printf("[RabbitMQ] Connected and configured exchange '%s'", exchangeName)
+	logger.Printf(context.Background(), "[RabbitMQ] Connected and configured exchange '%s'", exchangeName)
 
 	return &Publisher{
 		conn:     conn,
@@ -62,6 +63,8 @@ func NewPublisher(url string, exchangeName string) (*Publisher, error) {
 }
 
 func (p *Publisher) Publish(ctx context.Context, routingKey string, payload []byte) error {
+
+	corrID := ctxutil.GetCorrelationID(ctx)
 	err := p.ch.PublishWithContext(ctx,
 		p.exchange,
 		routingKey,
@@ -70,7 +73,10 @@ func (p *Publisher) Publish(ctx context.Context, routingKey string, payload []by
 		amqp.Publishing{
 			DeliveryMode: amqp.Persistent,
 			ContentType:  "application/json",
-			Body:         payload,
+			Headers: amqp.Table{
+				"X-Correlation-Id": corrID,
+			},
+			Body: payload,
 		})
 	if err != nil {
 		return fmt.Errorf("failed to publish: %w", err)

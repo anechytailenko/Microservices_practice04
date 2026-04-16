@@ -2,9 +2,9 @@ package api
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 	"github.com/anechytailenko/Microservices_practice04/internal/users/features/create_user"
 	"github.com/anechytailenko/Microservices_practice04/internal/users/features/get_user"
@@ -20,13 +20,14 @@ func RegisterRoutes(
 		var cmd create_user.Command
 
 		if err := json.NewDecoder(r.Body).Decode(&cmd); err != nil {
+			logger.Printf(r.Context(), "[ERROR] Invalid JSON body: %v", err)
 			http.Error(w, "invalid json body", http.StatusBadRequest)
 			return
 		}
 
 		id, err := createHandler.Handle(r.Context(), cmd)
 		if err != nil {
-			log.Printf("[ERROR] Failed to create user: %v", err)
+			logger.Printf(r.Context(), "[ERROR] Failed to create user: %v", err)
 			shared.HandleError(w, err)
 			return
 		}
@@ -42,7 +43,7 @@ func RegisterRoutes(
 
 		dto, err := getUserHandler.Handle(r.Context(), q)
 		if err != nil {
-			log.Printf("[ERROR] Failed to get user: %v", err)
+			logger.Printf(r.Context(), "[ERROR] Failed to get user: %v", err)
 			shared.HandleError(w, err)
 			return
 		}

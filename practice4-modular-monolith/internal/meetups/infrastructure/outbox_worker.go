@@ -3,8 +3,9 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
+
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 )
 
 type EventPublisher interface {
@@ -27,12 +28,12 @@ func (w *OutboxWorker) Start(ctx context.Context, pollInterval time.Duration) {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
-	log.Println("[Meetups Outbox Worker] Started processing background events...")
+	logger.Println(ctx, "[Meetups Outbox Worker] Started processing background events...")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[Meetups Outbox Worker] Shutting down gracefully...")
+			logger.Println(ctx, "[Meetups Outbox Worker] Shutting down gracefully...")
 			return
 		case <-ticker.C:
 			w.processOutbox(ctx)
@@ -42,16 +43,16 @@ func (w *OutboxWorker) Start(ctx context.Context, pollInterval time.Duration) {
 
 func (w *OutboxWorker) processOutbox(ctx context.Context) {
 	query := `
-		SELECT id, event_type, payload 
-		FROM outbox_events 
-		WHERE processed = false 
-		ORDER BY created_at ASC 
-		LIMIT 50
-		FOR UPDATE SKIP LOCKED`
+        SELECT id, event_type, payload 
+        FROM outbox_events 
+        WHERE processed = false 
+        ORDER BY created_at ASC 
+        LIMIT 50
+        FOR UPDATE SKIP LOCKED`
 
 	rows, err := w.db.QueryContext(ctx, query)
 	if err != nil {
-		log.Printf("[Meetups Outbox Worker] Error querying database: %v\n", err)
+		logger.Printf(ctx, "[Meetups Outbox Worker] Error querying database: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -61,13 +62,13 @@ func (w *OutboxWorker) processOutbox(ctx context.Context) {
 		var payload []byte
 
 		if err := rows.Scan(&id, &eventType, &payload); err != nil {
-			log.Printf("[Meetups Outbox Worker] Error scanning row: %v\n", err)
+			logger.Printf(ctx, "[Meetups Outbox Worker] Error scanning row: %v", err)
 			continue
 		}
 
 		err = w.publisher.Publish(ctx, eventType, payload)
 		if err != nil {
-			log.Printf("[Meetups Outbox Worker] Failed to publish EventID %s: %v. Will retry.", id, err)
+			logger.Printf(ctx, "[Meetups Outbox Worker] Failed to publish EventID %s: %v. Will retry.", id, err)
 			continue
 		}
 
@@ -75,9 +76,9 @@ func (w *OutboxWorker) processOutbox(ctx context.Context) {
 		_, err = w.db.ExecContext(ctx, updateQuery, id)
 
 		if err != nil {
-			log.Printf("[Meetups Outbox Worker] CRITICAL: Failed to mark %s as processed: %v\n", id, err)
+			logger.Printf(ctx, "[Meetups Outbox Worker] CRITICAL: Failed to mark %s as processed: %v", id, err)
 		} else {
-			log.Printf("[Meetups Outbox Worker] --> PUBLISHED: %s (RoutingKey: %s)\n", id, eventType)
+			logger.Printf(ctx, "[Meetups Outbox Worker] --> PUBLISHED: %s (RoutingKey: %s)", id, eventType)
 		}
 	}
 }

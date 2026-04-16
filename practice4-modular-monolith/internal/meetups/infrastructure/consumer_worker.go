@@ -3,9 +3,10 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/commands"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -24,19 +25,28 @@ func NewConsumerWorker(db *sql.DB, messages <-chan amqp.Delivery) *ConsumerWorke
 }
 
 func (w *ConsumerWorker) Start(ctx context.Context) {
-	log.Println("[Meetups Consumer] Started listening for commands...")
+	logger.Println(ctx, "[Meetups Consumer] Started listening for commands...")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[Meetups Consumer] Shutting down gracefully...")
+			logger.Println(ctx, "[Meetups Consumer] Shutting down gracefully...")
 			return
 		case d, ok := <-w.messages:
 			if !ok {
-				log.Println("[Meetups Consumer] Message channel closed")
+				logger.Println(ctx, "[Meetups Consumer] Message channel closed")
 				return
 			}
-			w.processEvent(ctx, d)
+
+			var corrID string
+			if d.Headers != nil {
+				if id, ok := d.Headers["X-Correlation-Id"].(string); ok {
+					corrID = id
+				}
+			}
+
+			msgCtx := ctxutil.WithCorrelationID(ctx, corrID)
+			w.processEvent(msgCtx, d)
 		}
 	}
 }
@@ -48,21 +58,20 @@ func (w *ConsumerWorker) processEvent(ctx context.Context, d amqp.Delivery) {
 	case commands.CancelSeatReservationType:
 		w.processCancelSeat(ctx, d)
 	default:
-		log.Printf("[Meetups Consumer] Unknown routing key: %s. Dropping message.", d.RoutingKey)
+		logger.Printf(ctx, "[Meetups Consumer] Unknown routing key: %s. Dropping message.", d.RoutingKey)
 		d.Nack(false, false)
 	}
 }
 
-// inbox patter - that guarantee idempodency
 func (w *ConsumerWorker) checkInbox(ctx context.Context, tx *sql.Tx, eventID string) bool {
 	res, err := tx.ExecContext(ctx, `
-		INSERT INTO inbox_events (event_id) 
-		VALUES ($1) 
-		ON CONFLICT (event_id) DO NOTHING`,
+        INSERT INTO inbox_events (event_id) 
+        VALUES ($1) 
+        ON CONFLICT (event_id) DO NOTHING`,
 		eventID,
 	)
 	if err != nil {
-		log.Printf("[Meetups Consumer] Inbox DB Error for Event %s: %v", eventID, err)
+		logger.Printf(ctx, "[Meetups Consumer] Inbox DB Error for Event %s: %v", eventID, err)
 		return false
 	}
 	rowsAffected, _ := res.RowsAffected()

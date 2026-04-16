@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"log"
 	"net/http"
 	"os"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/features/get_meetup"
 	"github.com/anechytailenko/Microservices_practice04/internal/meetups/infrastructure"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/database"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 	"github.com/anechytailenko/Microservices_practice04/migrations"
@@ -35,17 +35,17 @@ func main() {
 
 	dbURL := os.Getenv("MEETUPS_DB_URL")
 	if dbURL == "" {
-		log.Fatal("MEETUPS_DB_URL is not set")
+		logger.Fatal(context.Background(), "MEETUPS_DB_URL is not set")
 	}
 
 	usersServiceURL := os.Getenv("USERS_SERVICE_URL")
 	if usersServiceURL == "" {
-		log.Fatal("USERS_SERVICE_URL is not set")
+		logger.Fatal(context.Background(), "USERS_SERVICE_URL is not set")
 	}
 
 	rabbitMQURL := os.Getenv("RABBITMQ_URL")
 	if rabbitMQURL == "" {
-		log.Fatal("RABBITMQ_URL is not set")
+		logger.Fatal(context.Background(), "RABBITMQ_URL is not set")
 	}
 
 	exchangeName := os.Getenv("DOMAIN_EXCHANGE")
@@ -75,17 +75,21 @@ func main() {
 
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
-		log.Fatalf("Failed to open database: %v", err)
+		logger.Fatalf(context.Background(), "Failed to open database: %v", err)
 	}
 	defer db.Close()
 
-	// proccess of migration that will run as the seperate Job in kubernetes
+	// process of migration that will run as a separate Job in kubernetes
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
-		log.Println("Starting  migration process for meetups...")
+
+		logger.Println(context.Background(), "Starting migration process for meetups...")
+
 		if err := database.RunMigrations(db, migrations.FS, "meetups"); err != nil {
-			log.Fatalf("Fatal error running meetups migrations: %v", err)
+			logger.Fatalf(context.Background(), "Fatal error running meetups migrations: %v", err)
 		}
-		log.Println("Migrations finished successfully. Exiting.")
+
+		logger.Println(context.Background(), "Migrations finished successfully. Exiting.")
+
 		db.Close()
 		os.Exit(0)
 	}
@@ -93,7 +97,7 @@ func main() {
 	publisher, err := rabbitmq.NewPublisher(rabbitMQURL, exchangeName)
 
 	if err != nil {
-		log.Fatalf("Failed to initialize RabbitMQ publisher: %v", err)
+		logger.Fatalf(context.Background(), "Failed to initialize RabbitMQ publisher: %v", err)
 	}
 	defer publisher.Close()
 
@@ -109,7 +113,7 @@ func main() {
 		consumerName,
 	)
 	if err != nil {
-		log.Fatalf("Failed to initialize RabbitMQ subscriber: %v", err)
+		logger.Fatalf(context.Background(), "Failed to initialize RabbitMQ subscriber: %v", err)
 	}
 	defer subscriber.Close()
 
@@ -131,8 +135,10 @@ func main() {
 	shared.RegisterHealthRoutes(mux, db, "meetups", CommitHash)
 	meetups_api.RegisterRoutes(mux, createHandler, changeStatusHandler, getMeetupHandler)
 
-	log.Printf("Starting Meetups Service on port %s...", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	finalHandler := shared.ContextWithCorrelationID(mux)
+
+	logger.Printf(context.Background(), "Starting Meetups Service on port %s...", port)
+	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
+		logger.Fatalf(context.Background(), "Server failed: %v", err)
 	}
 }

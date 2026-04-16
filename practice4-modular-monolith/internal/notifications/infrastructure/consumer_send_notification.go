@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/commands"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	"github.com/google/uuid"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -14,7 +14,7 @@ import (
 func (w *ConsumerWorker) handleSendNotification(ctx context.Context, d amqp.Delivery) {
 	var cmd commands.SendNotification
 	if err := json.Unmarshal(d.Body, &cmd); err != nil {
-		log.Printf("[Notifications Consumer] Invalid JSON for SendNotification: %v", err)
+		logger.Println(ctx, "[Notifications Consumer] Invalid JSON for SendNotification: %v", err)
 		d.Nack(false, false)
 		return
 	}
@@ -28,7 +28,7 @@ func (w *ConsumerWorker) handleSendNotification(ctx context.Context, d amqp.Deli
 
 	inboxID := fmt.Sprintf("%s-%s", cmd.WorkflowID, commands.SendNotificationType)
 	if !w.checkInbox(ctx, tx, inboxID) {
-		log.Printf("[Notifications Consumer] Saga Notification %s already processed. Skipping.", inboxID)
+		logger.Println(ctx, "[Notifications Consumer] Saga Notification %s already processed. Skipping.", inboxID)
 		d.Ack(false)
 		return
 	}
@@ -38,7 +38,7 @@ func (w *ConsumerWorker) handleSendNotification(ctx context.Context, d amqp.Deli
 
 	err = w.repo.SaveNotificationTx(ctx, tx, eventID, cmd.CorrelationID, cmd.UserID, payloadJSON)
 	if err != nil {
-		log.Printf("[Notifications Consumer] Failed to save Saga notification: %v", err)
+		logger.Println(ctx, "[Notifications Consumer] Failed to save Saga notification: %v", err)
 		d.Nack(false, true)
 		return
 	}
@@ -48,6 +48,6 @@ func (w *ConsumerWorker) handleSendNotification(ctx context.Context, d amqp.Deli
 		return
 	}
 
-	log.Printf("[Notifications Consumer] Sent %s notification to User %s. Msg: %s", cmd.Status, cmd.UserID, cmd.Message)
+	logger.Println(ctx, "[Notifications Consumer] Sent %s notification to User %s. Msg: %s", cmd.Status, cmd.UserID, cmd.Message)
 	d.Ack(false)
 }
