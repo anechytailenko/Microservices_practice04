@@ -166,21 +166,15 @@ curl -i -X GET http://localhost:8080/notifications/<USER_ID>
 
 ## Practice 7
 
-<<<<<<< HEAD
-Linux:
-=======
+
 **Linux:**
->>>>>>> feature/v8/G4-deployment-demo-v.2.0
 ```bash
 chmod +x installation/setup.sh
 ./installation/setup.sh
 ```
 
-<<<<<<< HEAD
-Windows:
-=======
+
 **Windows:**
->>>>>>> feature/v8/G4-deployment-demo-v.2.0
 ```bash
 .\installation\setup.ps1
 ```
@@ -230,7 +224,7 @@ curl -i -X POST http://localhost:8080/meetups \
      -d '{
            "title": "Go Kubernetes Workshop",
            "capacity": 100,
-           "owner_user_id": "<USER_ID>"
+           "owner_user_id": "b34afd33-84d0-4ed1-9ed5-cb00b6287619"
          }'
 ```
 
@@ -336,4 +330,4 @@ To demonstrate the production-grade capabilities of Kubernetes for the Meetups m
   * `kubectl rollout undo deployment/meetups-service -n saga-system`
   * `kubectl describe deploy meetups-service -n saga-system | grep Image:`
 * **Purpose:** To showcase Kubernetes' built-in safety net. Instead of manually rebuilding and redeploying the old code, Kubernetes kept a history of the deployment and instantly rolled the infrastructure back to the stable `v1.1` state safely and automatically.
->>>>>>> feature/v8/G4-deployment-demo-v.2.0
+
