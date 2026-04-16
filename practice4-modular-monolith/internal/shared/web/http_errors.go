@@ -29,6 +29,8 @@ func HandleError(w http.ResponseWriter, err error) {
 			status = http.StatusNotFound
 		case shared.ErrorTypeServiceUnavailable:
 			status = http.StatusServiceUnavailable
+		case shared.ErrorTypeGatewayTimeout:
+			status = http.StatusGatewayTimeout
 		case shared.ErrorTypeInternal:
 			status = http.StatusInternalServerError
 		default:
