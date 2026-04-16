@@ -9,6 +9,7 @@ const (
 	ErrorTypeConflict           ErrorType = "conflict"
 	ErrorTypeNotFound           ErrorType = "not_found"
 	ErrorTypeServiceUnavailable ErrorType = "service_unavailable"
+	ErrorTypeGatewayTimeout     ErrorType = "gateway_timeout"
 	ErrorTypeInternal           ErrorType = "internal"
 )
 
@@ -45,6 +46,13 @@ func NewNotFoundError(msg string, args ...any) Error {
 func NewServiceUnavailableError(msg string, args ...any) Error {
 	return Error{
 		Type:    ErrorTypeServiceUnavailable,
+		Message: fmt.Sprintf(msg, args...),
+	}
+}
+
+func NewGatewayTimeoutError(msg string, args ...any) Error {
+	return Error{
+		Type:    ErrorTypeGatewayTimeout,
 		Message: fmt.Sprintf(msg, args...),
 	}
 }
