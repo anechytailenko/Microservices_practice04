@@ -4,10 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
 	"time"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/notifications/domain"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -61,7 +61,7 @@ func (r *PostgresRepo) GetByOwnerID(ctx context.Context, ownerUserID string) ([]
 		}
 
 		if err := json.Unmarshal(dao.Payload, &rawEvent); err != nil {
-			log.Printf("[Repo] Failed to unmarshal payload for event %s: %v", dao.EventID, err)
+			logger.Println(ctx, "[Repo] Failed to unmarshal payload for event %s: %v", dao.EventID, err)
 			continue
 		}
 

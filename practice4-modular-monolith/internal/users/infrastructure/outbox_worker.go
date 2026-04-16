@@ -3,9 +3,9 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
 
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
 	"github.com/lib/pq"
 )
@@ -23,7 +23,7 @@ func NewOutboxWorker(db *sql.DB, publisher *rabbitmq.Publisher) *OutboxWorker {
 }
 
 func (w *OutboxWorker) Start(ctx context.Context, interval time.Duration) {
-	log.Printf("[Users Outbox Worker] Started processing events every %v...", interval)
+	logger.Printf(ctx, "[Users Outbox Worker] Started processing events every %v...", interval)
 
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -31,7 +31,7 @@ func (w *OutboxWorker) Start(ctx context.Context, interval time.Duration) {
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[Users Outbox Worker] Shutting down gracefully...")
+			logger.Println(ctx, "[Users Outbox Worker] Shutting down gracefully...")
 			return
 		case <-ticker.C:
 			w.processOutbox(ctx)
@@ -42,22 +42,22 @@ func (w *OutboxWorker) Start(ctx context.Context, interval time.Duration) {
 func (w *OutboxWorker) processOutbox(ctx context.Context) {
 	tx, err := w.db.BeginTx(ctx, nil)
 	if err != nil {
-		log.Printf("[Users Outbox Worker] Failed to begin tx: %v", err)
+		logger.Printf(ctx, "[Users Outbox Worker] Failed to begin tx: %v", err)
 		return
 	}
 	defer tx.Rollback()
 
 	query := `
-		SELECT id, event_type, payload 
-		FROM outbox_events 
-		WHERE processed = false 
-		ORDER BY created_at ASC 
-		LIMIT 50 
-		FOR UPDATE SKIP LOCKED`
+        SELECT id, event_type, payload 
+        FROM outbox_events 
+        WHERE processed = false 
+        ORDER BY created_at ASC 
+        LIMIT 50 
+        FOR UPDATE SKIP LOCKED`
 
 	rows, err := tx.QueryContext(ctx, query)
 	if err != nil {
-		log.Printf("[Users Outbox Worker] DB Error fetching events: %v", err)
+		logger.Printf(ctx, "[Users Outbox Worker] DB Error fetching events: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -88,7 +88,7 @@ func (w *OutboxWorker) processOutbox(ctx context.Context) {
 	for _, evt := range eventsToProcess {
 		err := w.publisher.Publish(ctx, evt.EventType, evt.Payload)
 		if err != nil {
-			log.Printf("[Users Outbox Worker] Failed to publish event %s: %v", evt.ID, err)
+			logger.Printf(ctx, "[Users Outbox Worker] Failed to publish event %s: %v", evt.ID, err)
 			continue
 		}
 		processedIDs = append(processedIDs, evt.ID)
@@ -100,20 +100,20 @@ func (w *OutboxWorker) processOutbox(ctx context.Context) {
 	}
 
 	updateQuery := `
-		UPDATE outbox_events 
-		SET processed = true 
-		WHERE id = ANY($1)`
+        UPDATE outbox_events 
+        SET processed = true 
+        WHERE id = ANY($1)`
 
 	_, err = tx.ExecContext(ctx, updateQuery, pq.Array(processedIDs))
 	if err != nil {
-		log.Printf("[Users Outbox Worker] Failed to mark events as processed: %v", err)
+		logger.Printf(ctx, "[Users Outbox Worker] Failed to mark events as processed: %v", err)
 		return
 	}
 
 	if err := tx.Commit(); err != nil {
-		log.Printf("[Users Outbox Worker] Failed to commit outbox processing: %v", err)
+		logger.Printf(ctx, "[Users Outbox Worker] Failed to commit outbox processing: %v", err)
 		return
 	}
 
-	log.Printf("[Users Outbox Worker] Successfully published %d events to RabbitMQ", len(processedIDs))
+	logger.Printf(ctx, "[Users Outbox Worker] Successfully published %d events to RabbitMQ", len(processedIDs))
 }

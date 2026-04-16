@@ -3,8 +3,9 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"log"
 	"time"
+
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 )
 
 type EventPublisher interface {
@@ -27,12 +28,12 @@ func (w *OutboxWorker) Start(ctx context.Context, pollInterval time.Duration) {
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
-	log.Println("[Workflow Outbox Worker] Started processing background events...")
+	logger.Println(ctx, "[Workflow Outbox Worker] Started processing background events...")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[Workflow Outbox Worker] Shutting down...")
+			logger.Println(ctx, "[Workflow Outbox Worker] Shutting down...")
 			return
 		case <-ticker.C:
 			w.processOutbox(ctx)
@@ -51,7 +52,7 @@ func (w *OutboxWorker) processOutbox(ctx context.Context) {
 
 	rows, err := w.db.QueryContext(ctx, query)
 	if err != nil {
-		log.Printf("[Workflow Outbox Worker] Error querying database: %v\n", err)
+		logger.Printf(ctx, "[Workflow Outbox Worker] Error querying database: %v", err)
 		return
 	}
 	defer rows.Close()
@@ -61,13 +62,13 @@ func (w *OutboxWorker) processOutbox(ctx context.Context) {
 		var payload []byte
 
 		if err := rows.Scan(&id, &eventType, &payload); err != nil {
-			log.Printf("[Workflow Outbox Worker] Error scanning row: %v\n", err)
+			logger.Printf(ctx, "[Workflow Outbox Worker] Error scanning row: %v", err)
 			continue
 		}
 
 		err = w.publisher.Publish(ctx, eventType, payload)
 		if err != nil {
-			log.Printf("[Workflow Outbox Worker] Failed to publish EventID %s: %v. Will retry next tick.", id, err)
+			logger.Printf(ctx, "[Workflow Outbox Worker] Failed to publish EventID %s: %v. Will retry next tick.", id, err)
 			continue
 		}
 
@@ -75,9 +76,9 @@ func (w *OutboxWorker) processOutbox(ctx context.Context) {
 		_, err = w.db.ExecContext(ctx, updateQuery, id)
 
 		if err != nil {
-			log.Printf("[Workflow Outbox Worker] CRITICAL: Failed to mark %s as processed: %v\n", id, err)
+			logger.Printf(ctx, "[Workflow Outbox Worker] CRITICAL: Failed to mark %s as processed: %v", id, err)
 		} else {
-			log.Printf("[Workflow Outbox Worker] --> PUBLISHED: %s (Key: %s)\n", id, eventType)
+			logger.Printf(ctx, "[Workflow Outbox Worker] --> PUBLISHED: %s (Key: %s)", id, eventType)
 		}
 	}
 }

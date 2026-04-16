@@ -1,10 +1,11 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"embed"
-	"log"
 
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -29,7 +30,7 @@ func RunMigrations(db *sql.DB, fs embed.FS, dirPath string) error {
 	err = m.Up()
 
 	if err == migrate.ErrNoChange {
-		log.Printf("[%s] Database is up to date. No new migrations to apply.", dirPath)
+		logger.Printf(context.Background(), "[%s] Database is up to date. No new migrations to apply.", dirPath)
 		return nil
 	}
 
@@ -37,6 +38,6 @@ func RunMigrations(db *sql.DB, fs embed.FS, dirPath string) error {
 		return err
 	}
 
-	log.Printf("[%s] Migrations applied successfully", dirPath)
+	logger.Printf(context.Background(), "[%s] Migrations applied successfully", dirPath)
 	return nil
 }

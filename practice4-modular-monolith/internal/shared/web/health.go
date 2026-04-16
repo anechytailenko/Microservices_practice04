@@ -3,9 +3,10 @@ package web
 import (
 	"context"
 	"database/sql"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 )
 
 type HealthResponse struct {
@@ -47,7 +48,8 @@ func RegisterHealthRoutes(mux *http.ServeMux, db *sql.DB, serviceName string, co
 		defer cancel()
 
 		if err := db.PingContext(ctx); err != nil {
-			log.Printf("[%s] Health check failed: db is down: %v", serviceName, err)
+
+			logger.Printf(ctx, "[%s] Health check failed: db is down: %v", serviceName, err)
 
 			resp := HealthResponse{
 				Status:  "DOWN",

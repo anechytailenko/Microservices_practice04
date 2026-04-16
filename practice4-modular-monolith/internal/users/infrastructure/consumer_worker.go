@@ -3,9 +3,10 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/commands"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -24,19 +25,29 @@ func NewConsumerWorker(db *sql.DB, repo *PostgresRepo, msgs <-chan amqp.Delivery
 }
 
 func (w *ConsumerWorker) Start(ctx context.Context) {
-	log.Println("[Users Consumer] Started listening for commands...")
+
+	logger.Println(ctx, "[Users Consumer] Started listening for commands...")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[Users Consumer] Shutting down gracefully...")
+			logger.Println(ctx, "[Users Consumer] Shutting down gracefully...")
 			return
 		case d, ok := <-w.msgs:
 			if !ok {
-				log.Println("[Users Consumer] Message channel closed")
+				logger.Println(ctx, "[Users Consumer] Message channel closed")
 				return
 			}
-			w.processCommand(ctx, d)
+
+			var corrID string
+			if d.Headers != nil {
+				if id, ok := d.Headers["X-Correlation-Id"].(string); ok {
+					corrID = id
+				}
+			}
+
+			msgCtx := ctxutil.WithCorrelationID(ctx, corrID)
+			w.processCommand(msgCtx, d)
 		}
 	}
 }
@@ -46,7 +57,7 @@ func (w *ConsumerWorker) processCommand(ctx context.Context, d amqp.Delivery) {
 	case commands.UpdateScheduleType:
 		w.processUpdateSchedule(ctx, d)
 	default:
-		log.Printf("[Users Consumer] Unknown routing key: %s. Dropping.", d.RoutingKey)
+		logger.Printf(ctx, "[Users Consumer] Unknown routing key: %s. Dropping.", d.RoutingKey)
 		d.Ack(false)
 	}
 }
@@ -54,13 +65,13 @@ func (w *ConsumerWorker) processCommand(ctx context.Context, d amqp.Delivery) {
 // inbox pattern
 func (w *ConsumerWorker) checkInbox(ctx context.Context, tx *sql.Tx, eventID string) bool {
 	res, err := tx.ExecContext(ctx, `
-		INSERT INTO inbox_events (event_id) 
-		VALUES ($1) 
-		ON CONFLICT (event_id) DO NOTHING`,
+        INSERT INTO inbox_events (event_id) 
+        VALUES ($1) 
+        ON CONFLICT (event_id) DO NOTHING`,
 		eventID,
 	)
 	if err != nil {
-		log.Printf("[Users Consumer] Inbox DB Error: %v", err)
+		logger.Printf(ctx, "[Users Consumer] Inbox DB Error: %v", err)
 		return false
 	}
 	rowsAffected, _ := res.RowsAffected()

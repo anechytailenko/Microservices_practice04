@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 	"github.com/anechytailenko/Microservices_practice04/internal/workflows/features/create_workflow"
 	"github.com/anechytailenko/Microservices_practice04/internal/workflows/features/get_workflow"
@@ -24,10 +23,7 @@ func RegisterRoutes(
 			return
 		}
 
-		corrID := r.Header.Get("X-Correlation-Id")
-		ctx := ctxutil.WithCorrelationID(r.Context(), corrID)
-
-		dto, err := createHandler.Handle(ctx, cmd)
+		dto, err := createHandler.Handle(r.Context(), cmd)
 		if err != nil {
 			shared.HandleError(w, err)
 			return

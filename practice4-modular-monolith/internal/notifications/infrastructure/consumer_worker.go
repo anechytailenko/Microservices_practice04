@@ -3,10 +3,11 @@ package infrastructure
 import (
 	"context"
 	"database/sql"
-	"log"
 
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/commands"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/contracts/events"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/ctxutil"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
@@ -25,18 +26,20 @@ func NewConsumerWorker(db *sql.DB, repo *PostgresRepo, msgs <-chan amqp.Delivery
 }
 
 func (w *ConsumerWorker) Start(ctx context.Context) {
-	log.Println("[Notifications Consumer] Started listening for events & commands...")
+	logger.Println(ctx, "[Notifications Consumer] Started listening for events & commands...")
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("[Notifications Consumer] Shutting down gracefully...")
+			logger.Println(ctx, "[Notifications Consumer] Shutting down gracefully...")
 			return
 		case d, ok := <-w.messages:
 			if !ok {
-				log.Println("[Notifications Consumer] Message channel closed")
+				logger.Println(ctx, "[Notifications Consumer] Message channel closed")
 				return
 			}
+			corrID := d.Headers["X-Correlation-Id"].(string)
+			ctx := ctxutil.WithCorrelationID(context.Background(), corrID)
 			w.processEvent(ctx, d)
 		}
 	}
@@ -49,7 +52,7 @@ func (w *ConsumerWorker) processEvent(ctx context.Context, d amqp.Delivery) {
 	case events.MeetupCreatedEventType:
 		w.handleMeetupCreated(ctx, d)
 	default:
-		log.Printf("[Notifications Consumer] Unknown event type: %s. Dropping.", d.RoutingKey)
+		logger.Println(ctx, "[Notifications Consumer] Unknown event type: %s. Dropping.", d.RoutingKey)
 		d.Ack(false)
 	}
 }
@@ -62,7 +65,7 @@ func (w *ConsumerWorker) checkInbox(ctx context.Context, tx *sql.Tx, id string) 
 		id,
 	)
 	if err != nil {
-		log.Printf("[Notifications Consumer] Inbox DB Error: %v", err)
+		logger.Println(ctx, "[Notifications Consumer] Inbox DB Error: %v", err)
 		return false
 	}
 	count, _ := res.RowsAffected()

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/anechytailenko/Microservices_practice04/internal/notifications/features/get_notifications"
 	"github.com/anechytailenko/Microservices_practice04/internal/notifications/infrastructure"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/database"
+	"github.com/anechytailenko/Microservices_practice04/internal/shared/logger"
 	"github.com/anechytailenko/Microservices_practice04/internal/shared/rabbitmq"
 	shared "github.com/anechytailenko/Microservices_practice04/internal/shared/web"
 	"github.com/anechytailenko/Microservices_practice04/migrations"
@@ -32,12 +32,12 @@ func main() {
 
 	dbURL := os.Getenv("NOTIFICATIONS_DB_URL")
 	if dbURL == "" {
-		log.Fatal("NOTIFICATIONS_DB_URL is not set")
+		logger.Fatal(context.Background(), "NOTIFICATIONS_DB_URL is not set")
 	}
 
 	rabbitMQURL := os.Getenv("RABBITMQ_URL")
 	if rabbitMQURL == "" {
-		log.Fatal("RABBITMQ_URL is not set")
+		logger.Fatal(context.Background(), "RABBITMQ_URL is not set")
 	}
 
 	exchangeName := os.Getenv("DOMAIN_EXCHANGE")
@@ -67,23 +67,27 @@ func main() {
 
 	db, err := sqlx.Connect("postgres", dbURL)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Fatalf(context.Background(), "Failed to connect to database: %v", err)
 	}
 	defer db.Close()
 
-	// proccess of migration that will run as the seperate Job in kubernetes
+	// process of migration that will run as a separate Job in kubernetes
 	if len(os.Args) > 1 && os.Args[1] == "migrate" {
-		log.Println("Starting  migration process for notifications...")
+
+		logger.Println(context.Background(), "Starting migration process for notifications...")
+
 		if err := database.RunMigrations(db.DB, migrations.FS, "notifications"); err != nil {
-			log.Fatalf("Fatal error running notifications migrations: %v", err)
+			logger.Fatalf(context.Background(), "Fatal error running notifications migrations: %v", err)
 		}
-		log.Println("Migrations finished successfully. Exiting.")
+
+		logger.Println(context.Background(), "Migrations finished successfully. Exiting.")
+
 		db.Close()
 		os.Exit(0)
 	}
 
 	if err := database.RunMigrations(db.DB, migrations.FS, "notifications"); err != nil {
-		log.Fatalf("Fatal error running notifications migrations: %v", err)
+		logger.Fatalf(context.Background(), "Fatal error running notifications migrations: %v", err)
 	}
 
 	bindingKeys := []string{
@@ -102,7 +106,7 @@ func main() {
 	)
 
 	if err != nil {
-		log.Fatalf("Failed to initialize RabbitMQ subscriber: %v", err)
+		logger.Fatalf(context.Background(), "Failed to initialize RabbitMQ subscriber: %v", err)
 	}
 	defer subscriber.Close()
 
@@ -118,8 +122,10 @@ func main() {
 	getNotificationsHandler := get_notifications.NewHandler(repo)
 	api.RegisterRoutes(mux, getNotificationsHandler)
 
-	log.Printf("Starting Notification Service on port %s...", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		log.Fatalf("Server failed: %v", err)
+	finalHandler := shared.ContextWithCorrelationID(mux)
+
+	logger.Printf(context.Background(), "Starting Notification Service on port %s...", port)
+	if err := http.ListenAndServe(":"+port, finalHandler); err != nil {
+		logger.Fatalf(context.Background(), "Server failed: %v", err)
 	}
 }
