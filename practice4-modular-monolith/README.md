@@ -166,13 +166,13 @@ curl -i -X GET http://localhost:8080/notifications/<USER_ID>
 
 ## Practice 7
 
-Linux:
+**Linux:**
 ```bash
 chmod +x installation/setup.sh
 ./installation/setup.sh
 ```
 
-Windows:
+**Windows:**
 ```bash
 .\installation\setup.ps1
 ```
@@ -222,7 +222,7 @@ curl -i -X POST http://localhost:8080/meetups \
      -d '{
            "title": "Go Kubernetes Workshop",
            "capacity": 100,
-           "owner_user_id": "<USER_ID>"
+           "owner_user_id": "b34afd33-84d0-4ed1-9ed5-cb00b6287619"
          }'
 ```
 
@@ -269,3 +269,62 @@ curl -X GET http://localhost:8080/workflows/<WORKFLOW_ID>
 **To see compensation:**
 - 1 stage compensation : not existed meetupId
 - 2 stage compensation : not existed userId
+
+
+## Practice 8
+
+To run minikube : 
+
+**Linux:**
+```bash
+chmod +x installation/setup.sh
+./installation/setup.sh
+```
+**Windows:**
+```bash
+.\installation\setup.ps1
+```
+
+The Version 2.0 update includes the following images, which have been hardened with correlation propagation and centralized logging handling:
+
+* **Gateway Service:** `anna13nechytailenko/saga-gateway:v2.0`
+* **Users Service:** `anna13nechytailenko/saga-users:v2.0`
+* **Notifications Service:** `anna13nechytailenko/saga-notifications:v2.0`
+* **Workflow Service:** `anna13nechytailenko/saga-workflow:v2.0`
+
+### Kubernetes Deployment & Resilience Demonstration
+
+> **Note:** The complete, raw terminal output for this demonstration can be found in the folder [demo/practice_8](./demo/practice_8/terminal_demo.txt).
+
+### Objective
+To demonstrate the production-grade capabilities of Kubernetes for the Meetups microservice, specifically focusing on **elastic scaling**, **zero-downtime deployments (Rolling Updates)**, **system observability (Centralized Logging with Correlation IDs)**, and **instant rollbacks**.
+
+---
+
+#### Step 1: Demonstrating Elasticity (Scaling Up)
+**What we did:** We checked the initial state of the `meetups-service` (which had 3 running pods) and dynamically scaled it up to 5 replicas using the imperative `kubectl scale` command.
+* **Command:** `kubectl scale deploy meetups-service --replicas=5 -n saga-system`
+* **Purpose:** To demonstrate how quickly Kubernetes can provision new resources and adapt to sudden spikes in network traffic without requiring code changes or downtime.
+
+#### Step 2: Establishing the Baseline (Version 1.1 - The Problem)
+**What we did:** We sent successful HTTP POST requests to create a User and a Meetup, generating traffic. We then inspected the logs of the `meetups-service`.
+* **Command:** `kubectl logs -l app=meetups-service -n saga-system --tail=20`
+* **Purpose:** To highlight the observability flaw in Version 1.1. The logs showed application events, but lacked any tracking context. In a microservice architecture, without a Correlation ID, it is nearly impossible to trace a single user's request across multiple services.
+
+#### Step 3: The Zero-Downtime Rolling Update (Deploying Version 2.0)
+**What we did:** We triggered a live update of the Meetups service, pointing the deployment to the newly built `v2.0` Docker image. We then monitored the rollout status.
+* **Commands:** * `kubectl set image deployment/meetups-service app=anna13nechytailenko/saga-meetups:v2.0 -n saga-system`
+  * `kubectl rollout status deploy/meetups-service -n saga-system`
+* **Purpose:** To demonstrate the `RollingUpdate` strategy. Kubernetes gracefully replaced the old `v1.1` pods with the new `v2.0` pods one by one, ensuring that at least some instances were always online to serve user traffic. There was zero downtime during the upgrade.
+
+#### Step 4: Verifying the Fix (Centralized Observability)
+**What we did:** After the rollout finished, we sent new HTTP requests to the system (including an intentional 404 error) and checked the logs again.
+* **Command:** `kubectl logs -l app=meetups-service -n saga-system --tail=20`
+* **Purpose:** To prove the architectural improvement of Version 2.0. The logs now prominently displayed `[CorrID: <uuid>]` at the start of every line. We successfully achieved distributed tracing, allowing us to connect Gateway requests, Meetups logic, and RabbitMQ events using a single ID.
+
+#### Step 5: The Instant Rollback (Disaster Recovery)
+**What we did:** We simulated a scenario where the new version contained a critical bug and needed to be immediately reverted. We executed an undo command and verified the image version.
+* **Commands:**
+  * `kubectl rollout undo deployment/meetups-service -n saga-system`
+  * `kubectl describe deploy meetups-service -n saga-system | grep Image:`
+* **Purpose:** To showcase Kubernetes' built-in safety net. Instead of manually rebuilding and redeploying the old code, Kubernetes kept a history of the deployment and instantly rolled the infrastructure back to the stable `v1.1` state safely and automatically.
