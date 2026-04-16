@@ -13,7 +13,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: users-migrator
-          image: anna13nechytailenko/saga-users:v1.1
+          image: anna13nechytailenko/saga-users:v2.0
           imagePullPolicy: IfNotPresent
           args: ["migrate"]
           envFrom:
@@ -36,7 +36,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: meetups-migrator
-          image: anna13nechytailenko/saga-meetups:v1.1
+          image: anna13nechytailenko/saga-meetups:v2.0
           imagePullPolicy: IfNotPresent
           args: ["migrate"]
           envFrom:
@@ -59,7 +59,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: notifications-migrator
-          image: anna13nechytailenko/saga-notifications:v1.1
+          image: anna13nechytailenko/saga-notifications:v2.0
           imagePullPolicy: IfNotPresent
           args: ["migrate"]
           envFrom:
@@ -82,7 +82,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: workflow-migrator
-          image: anna13nechytailenko/saga-workflow:v1.1
+          image: anna13nechytailenko/saga-workflow:v2.0
           imagePullPolicy: IfNotPresent
           args: ["migrate"]
           envFrom:

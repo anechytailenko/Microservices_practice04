@@ -43,8 +43,20 @@ spec:
 
 ---
 # ==========================================
-# 2. MEETUPS SERVICE
+# 2. MEETUPS SERVICE (Left at v1.1 for deployment demo)
 # ==========================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: meetups-service
+  namespace: saga-system
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+  selector:
+    app: meetups-service
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
